@@ -1,0 +1,25 @@
+{
+  "overview": "A premium full-stack Institute Fee Management Portal for Akshay Classes, featuring role-based dashboards for admins and students, payment tracking, notifications, and beautiful glassmorphism UI with dark/light mode.",
+  "features": [
+    "Internet Identity authentication with admin/student roles",
+    "Admin dashboard with stats, charts, and student management",
+    "Fee and payment recording with multiple payment methods",
+    "Student dashboard with fee summary and payment history",
+    "Notification system with manual and auto-triggered alerts",
+    "Recharts visualizations for revenue and fee data",
+    "Dark/light mode with Framer Motion animations",
+    "Responsive mobile layout with animated sidebar",
+    "Loading skeletons, empty states, and toast notifications"
+  ],
+  "category": "productivity",
+  "tags": [
+    "fee-management",
+    "education",
+    "dashboard",
+    "saas",
+    "admin-panel",
+    "students",
+    "payments"
+  ],
+  "last_updated": "2026-05-09T06:23:15.560Z"
+}
