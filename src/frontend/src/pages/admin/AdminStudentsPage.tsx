@@ -14,20 +14,30 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { usePaymentsByStudent } from "@/hooks/usePayments";
 import {
-  useCreateStudent,
-  useStudentsByAdmin,
+  useAddStudent,
+  useDeleteStudent,
+  useStudents,
   useUpdateStudent,
 } from "@/hooks/useStudents";
-import type { CreateStudentForm, Student, UpdateStudentForm } from "@/types";
+import type {
+  CreateStudentForm,
+  Student,
+  UpdateStudentForm,
+} from "@/types/student";
+import { formatCurrency, formatDate } from "@/utils/formatters";
 import {
   ChevronLeft,
   ChevronRight,
   Edit2,
+  Eye,
+  IndianRupee,
   Plus,
   Search,
   SortAsc,
   SortDesc,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -36,32 +46,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "inactive";
-type SortKey = "name" | "monthly_fee" | "joined_date";
+type SortKey = "name" | "monthlyFee" | "joinedDate";
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 20;
-
-function formatDate(ts: bigint): string {
-  const ms = Number(ts) / 1_000_000;
-  return new Date(ms).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatFee(fee: bigint): string {
-  return `₹${Number(fee).toLocaleString("en-IN")}`;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 const AVATAR_COLORS = [
   "from-violet-500 to-purple-600",
@@ -78,8 +66,173 @@ function avatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-// ─── Student Modal ───────────────────────────────────────────────────────────
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
+/* ---------- Student Details Modal ---------- */
+function StudentDetailsModal({
+  student,
+  open,
+  onClose,
+  onEdit,
+}: {
+  student: Student | null;
+  open: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const { data: payments = [] } = usePaymentsByStudent(student?.id ?? "");
+  const totalPaid = payments.reduce((s, p) => s + p.amountPaid, 0);
+  const pendingBalance = student
+    ? Math.max(0, student.monthlyFee - totalPaid)
+    : 0;
+
+  return (
+    <AnimatePresence>
+      {open && student && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 24 }}
+            transition={{ type: "spring", damping: 26, stiffness: 320 }}
+            className="fixed inset-x-4 top-10 bottom-10 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-14 sm:bottom-auto sm:w-full sm:max-w-lg z-50 flex flex-col"
+            data-ocid="student_details.dialog"
+          >
+            <div className="glass-card rounded-2xl shadow-elevated flex flex-col h-full sm:h-auto max-h-[calc(100vh-6rem)] overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-border/30">
+                <h2 className="font-display font-semibold text-xl text-foreground">
+                  Student Details
+                </h2>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-fast"
+                  data-ocid="student_details.close_button"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {/* Avatar + Name */}
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold text-white shrink-0 bg-gradient-to-br ${avatarColor(student.name)}`}
+                  >
+                    {getInitials(student.name)}
+                  </div>
+                  <div>
+                    <p className="font-display text-xl font-bold text-foreground">
+                      {student.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {student.email}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`ml-auto ${student.isActive ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-muted text-muted-foreground"}`}
+                    variant={student.isActive ? "default" : "secondary"}
+                  >
+                    {student.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {(
+                    [
+                      ["Class", student.class_],
+                      ["Course", student.course],
+                      ["Monthly Fee", formatCurrency(student.monthlyFee)],
+                      ["Joined", formatDate(student.joinedDate)],
+                      ["Fee Start", formatDate(student.feeStartDate)],
+                      ["Enrolled On", formatDate(student.createdAt)],
+                    ] as [string, string][]
+                  ).map(([label, value]) => (
+                    <div key={label} className="bg-muted/30 rounded-xl p-3">
+                      <p className="text-xs text-muted-foreground mb-0.5">
+                        {label}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Payment Summary */}
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+                    <IndianRupee className="w-3.5 h-3.5 text-primary" /> Payment
+                    Summary
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div>
+                      <p className="font-display text-lg font-bold text-primary">
+                        {formatCurrency(totalPaid)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Total Paid
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-display text-lg font-bold text-amber-500">
+                        {formatCurrency(pendingBalance)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Pending</p>
+                    </div>
+                    <div>
+                      <p className="font-display text-lg font-bold text-foreground">
+                        {payments.length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Payments</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 px-6 py-4 border-t border-border/30">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={onClose}
+                  data-ocid="student_details.cancel_button"
+                >
+                  Close
+                </Button>
+                <Button
+                  className="flex-1 gradient-accent text-primary-foreground"
+                  onClick={() => {
+                    onClose();
+                    onEdit();
+                  }}
+                  data-ocid="student_details.edit_button"
+                >
+                  <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Edit Student
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ---------- Add / Edit Student Modal ---------- */
 interface StudentModalProps {
   open: boolean;
   student?: Student | null;
@@ -88,48 +241,43 @@ interface StudentModalProps {
 
 function StudentModal({ open, student, onClose }: StudentModalProps) {
   const isEdit = !!student;
-  const createMutation = useCreateStudent();
+  const addMutation = useAddStudent();
   const updateMutation = useUpdateStudent();
 
-  const defaultCreate: CreateStudentForm = {
+  const defaultForm: CreateStudentForm = {
     name: "",
     email: "",
     class_: "",
     course: "",
-    monthly_fee: 0,
-    joined_date: new Date().toISOString().split("T")[0],
-    fee_start_date: new Date().toISOString().split("T")[0],
+    monthlyFee: 0,
+    joinedDate: new Date().toISOString().split("T")[0],
+    feeStartDate: new Date().toISOString().split("T")[0],
   };
 
-  const [form, setForm] = useState<CreateStudentForm>(defaultCreate);
+  const [form, setForm] = useState<CreateStudentForm>(defaultForm);
   const [errors, setErrors] = useState<
     Partial<Record<keyof CreateStudentForm, string>>
   >({});
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: defaultCreate is a stable literal defined inline
+  // biome-ignore lint/correctness/useExhaustiveDependencies: defaultForm is stable inline literal
   useEffect(() => {
-    if (open) {
-      if (student) {
-        setForm({
-          name: student.name,
-          email: student.email,
-          class_: student.class_,
-          course: student.course,
-          monthly_fee: Number(student.monthly_fee),
-          joined_date: new Date(Number(student.joined_date) / 1_000_000)
-            .toISOString()
-            .split("T")[0],
-          fee_start_date: new Date(Number(student.fee_start_date) / 1_000_000)
-            .toISOString()
-            .split("T")[0],
-        });
-      } else {
-        setForm(defaultCreate);
-      }
-      setErrors({});
-      setTimeout(() => firstInputRef.current?.focus(), 80);
+    if (!open) return;
+    if (student) {
+      setForm({
+        name: student.name,
+        email: student.email,
+        class_: student.class_,
+        course: student.course,
+        monthlyFee: student.monthlyFee,
+        joinedDate: student.joinedDate,
+        feeStartDate: student.feeStartDate,
+      });
+    } else {
+      setForm(defaultForm);
     }
+    setErrors({});
+    setTimeout(() => firstInputRef.current?.focus(), 80);
   }, [open, student]);
 
   function validate(): boolean {
@@ -140,10 +288,10 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
       e.email = "Invalid email";
     if (!form.class_.trim()) e.class_ = "Class is required";
     if (!form.course.trim()) e.course = "Course is required";
-    if (!form.monthly_fee || form.monthly_fee <= 0)
-      e.monthly_fee = "Fee must be > 0";
-    if (!form.joined_date) e.joined_date = "Required";
-    if (!form.fee_start_date) e.fee_start_date = "Required";
+    if (!form.monthlyFee || form.monthlyFee <= 0)
+      e.monthlyFee = "Fee must be > 0";
+    if (!form.joinedDate) e.joinedDate = "Required";
+    if (!form.feeStartDate) e.feeStartDate = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -158,12 +306,12 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
           email: form.email,
           class_: form.class_,
           course: form.course,
-          monthly_fee: form.monthly_fee,
+          monthlyFee: form.monthlyFee,
         };
-        await updateMutation.mutateAsync({ id: student.id, form: upd });
+        await updateMutation.mutateAsync({ id: student.id, data: upd });
         toast.success("Student updated successfully!");
       } else {
-        await createMutation.mutateAsync(form);
+        await addMutation.mutateAsync(form);
         toast.success("Student added successfully!");
       }
       onClose();
@@ -174,7 +322,7 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
     }
   }
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = addMutation.isPending || updateMutation.isPending;
 
   function field<K extends keyof CreateStudentForm>(
     key: K,
@@ -192,7 +340,6 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             onClick={onClose}
           />
@@ -205,7 +352,6 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
             data-ocid="student_modal.dialog"
           >
             <div className="glass-card rounded-2xl shadow-elevated flex flex-col h-full sm:h-auto max-h-[calc(100vh-5rem)] overflow-hidden">
-              {/* Header */}
               <div className="flex items-center justify-between px-6 py-5 border-b border-border/30">
                 <div>
                   <h2 className="font-display font-semibold text-xl text-foreground">
@@ -227,16 +373,13 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Body */}
               <form
                 onSubmit={handleSubmit}
                 className="flex-1 overflow-y-auto px-6 py-5"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Name */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="s-name" className="text-sm font-medium">
+                    <Label htmlFor="s-name">
                       Full Name <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -257,10 +400,8 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                       </p>
                     )}
                   </div>
-
-                  {/* Email */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="s-email" className="text-sm font-medium">
+                    <Label htmlFor="s-email">
                       Email <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -281,15 +422,13 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                       </p>
                     )}
                   </div>
-
-                  {/* Class */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="s-class" className="text-sm font-medium">
+                    <Label htmlFor="s-class">
                       Class <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="s-class"
-                      placeholder="e.g. Class 10, Grade XI"
+                      placeholder="e.g. Class 10"
                       value={form.class_}
                       onChange={(e) => field("class_", e.target.value)}
                       className={errors.class_ ? "border-destructive" : ""}
@@ -301,15 +440,13 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                       </p>
                     )}
                   </div>
-
-                  {/* Course */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="s-course" className="text-sm font-medium">
+                    <Label htmlFor="s-course">
                       Course <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="s-course"
-                      placeholder="e.g. Mathematics, Science"
+                      placeholder="e.g. Mathematics"
                       value={form.course}
                       onChange={(e) => field("course", e.target.value)}
                       className={errors.course ? "border-destructive" : ""}
@@ -321,10 +458,8 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                       </p>
                     )}
                   </div>
-
-                  {/* Monthly Fee */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="s-fee" className="text-sm font-medium">
+                    <Label htmlFor="s-fee">
                       Monthly Fee (₹){" "}
                       <span className="text-destructive">*</span>
                     </Label>
@@ -333,65 +468,56 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                       type="number"
                       min={1}
                       placeholder="e.g. 1500"
-                      value={form.monthly_fee || ""}
+                      value={form.monthlyFee || ""}
                       onChange={(e) =>
-                        field("monthly_fee", Number(e.target.value))
+                        field("monthlyFee", Number(e.target.value))
                       }
-                      className={errors.monthly_fee ? "border-destructive" : ""}
+                      className={errors.monthlyFee ? "border-destructive" : ""}
                       data-ocid="student_modal.fee_input"
                     />
-                    {errors.monthly_fee && (
+                    {errors.monthlyFee && (
                       <p className="text-xs text-destructive">
-                        {errors.monthly_fee}
+                        {errors.monthlyFee}
                       </p>
                     )}
                   </div>
-
-                  {/* Joined Date */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="s-joined" className="text-sm font-medium">
+                    <Label htmlFor="s-joined">
                       Joined Date <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="s-joined"
                       type="date"
-                      value={form.joined_date}
-                      onChange={(e) => field("joined_date", e.target.value)}
-                      className={errors.joined_date ? "border-destructive" : ""}
+                      value={form.joinedDate}
+                      onChange={(e) => field("joinedDate", e.target.value)}
+                      className={errors.joinedDate ? "border-destructive" : ""}
                       data-ocid="student_modal.joined_date_input"
                     />
-                    {errors.joined_date && (
+                    {errors.joinedDate && (
                       <p className="text-xs text-destructive">
-                        {errors.joined_date}
+                        {errors.joinedDate}
                       </p>
                     )}
                   </div>
-
-                  {/* Fee Start Date */}
                   <div className="space-y-1.5 sm:col-span-2">
-                    <Label
-                      htmlFor="s-fee-start"
-                      className="text-sm font-medium"
-                    >
+                    <Label htmlFor="s-fee-start">
                       Fee Start Date <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="s-fee-start"
                       type="date"
-                      value={form.fee_start_date}
-                      onChange={(e) => field("fee_start_date", e.target.value)}
-                      className={`${errors.fee_start_date ? "border-destructive" : ""} sm:max-w-xs`}
+                      value={form.feeStartDate}
+                      onChange={(e) => field("feeStartDate", e.target.value)}
+                      className={`${errors.feeStartDate ? "border-destructive" : ""} sm:max-w-xs`}
                       data-ocid="student_modal.fee_start_date_input"
                     />
-                    {errors.fee_start_date && (
+                    {errors.feeStartDate && (
                       <p className="text-xs text-destructive">
-                        {errors.fee_start_date}
+                        {errors.feeStartDate}
                       </p>
                     )}
                   </div>
                 </div>
-
-                {/* Footer buttons */}
                 <div className="flex gap-3 mt-8 pt-5 border-t border-border/30">
                   <Button
                     type="button"
@@ -427,54 +553,25 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
   );
 }
 
-// ─── Table Skeleton ──────────────────────────────────────────────────────────
-
-function TableSkeleton() {
-  return (
-    <div className="space-y-2">
-      {["a", "b", "c", "d", "e", "f"].map((key, i) => (
-        <motion.div
-          key={key}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.06 }}
-          className="flex items-center gap-4 p-4 rounded-xl border border-border/30"
-        >
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-          <div className="flex-1 space-y-1.5 min-w-0">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-32" />
-          </div>
-          <Skeleton className="h-4 w-20 hidden sm:block" />
-          <Skeleton className="h-4 w-20 hidden md:block" />
-          <Skeleton className="h-4 w-16 hidden lg:block" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-8 w-16 rounded-lg" />
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Sort Header ─────────────────────────────────────────────────────────────
-
-interface SortHeaderProps {
+function SortHeader({
+  label,
+  sortKey,
+  current,
+  dir,
+  onSort,
+}: {
   label: string;
   sortKey: SortKey;
   current: SortKey;
   dir: SortDir;
-  onSort: (key: SortKey) => void;
-}
-
-function SortHeader({ label, sortKey, current, dir, onSort }: SortHeaderProps) {
+  onSort: (k: SortKey) => void;
+}) {
   const active = current === sortKey;
   return (
     <button
       type="button"
       onClick={() => onSort(sortKey)}
-      className={`flex items-center gap-1 text-xs font-medium uppercase tracking-wide transition-fast ${
-        active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-      }`}
+      className={`flex items-center gap-1 text-xs font-medium uppercase tracking-wide transition-fast ${active ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
     >
       {label}
       {active ? (
@@ -490,23 +587,48 @@ function SortHeader({ label, sortKey, current, dir, onSort }: SortHeaderProps) {
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+function TableSkeleton() {
+  return (
+    <div className="space-y-2">
+      {["a", "b", "c", "d", "e"].map((key, i) => (
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.06 }}
+          className="flex items-center gap-4 p-4 rounded-xl border border-border/30"
+        >
+          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+          <div className="flex-1 space-y-1.5 min-w-0">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+          <Skeleton className="h-4 w-20 hidden sm:block" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-8 w-16 rounded-lg" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export function AdminStudentsPage() {
-  const { data: students = [], isLoading } = useStudentsByAdmin();
-
+  const { data: students = [], isLoading } = useStudents();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
-
   const [modalOpen, setModalOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Student | null>(null);
-
+  const [viewStudent, setViewStudent] = useState<Student | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [toggleTarget, setToggleTarget] = useState<Student | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState(false);
   const updateMutation = useUpdateStudent();
+  const deleteMutation = useDeleteStudent();
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -517,8 +639,7 @@ export function AdminStudentsPage() {
     setPage(1);
   }
 
-  // Reset page on filter/search changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: search and filterStatus are primitives used to trigger a side-effect reset
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset page on filter change is intentional
   useEffect(() => {
     setPage(1);
   }, [search, filterStatus]);
@@ -526,24 +647,22 @@ export function AdminStudentsPage() {
   const filtered = useMemo(() => {
     let list = [...students];
     const q = search.toLowerCase().trim();
-    if (q) {
+    if (q)
       list = list.filter(
         (s) =>
           s.name.toLowerCase().includes(q) ||
           s.email.toLowerCase().includes(q) ||
           s.class_.toLowerCase().includes(q),
       );
-    }
-    if (filterStatus === "active") list = list.filter((s) => s.is_active);
-    if (filterStatus === "inactive") list = list.filter((s) => !s.is_active);
-
+    if (filterStatus === "active") list = list.filter((s) => s.isActive);
+    if (filterStatus === "inactive") list = list.filter((s) => !s.isActive);
     list.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "name") cmp = a.name.localeCompare(b.name);
-      if (sortKey === "monthly_fee")
-        cmp = Number(a.monthly_fee) - Number(b.monthly_fee);
-      if (sortKey === "joined_date")
-        cmp = Number(a.joined_date) - Number(b.joined_date);
+      if (sortKey === "monthlyFee") cmp = a.monthlyFee - b.monthlyFee;
+      if (sortKey === "joinedDate")
+        cmp =
+          new Date(a.joinedDate).getTime() - new Date(b.joinedDate).getTime();
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
@@ -552,35 +671,11 @@ export function AdminStudentsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  function openAdd() {
-    setEditStudent(null);
-    setModalOpen(true);
-  }
-
-  function openEdit(student: Student) {
-    setEditStudent(student);
-    setModalOpen(true);
-  }
-
-  function closeModal() {
-    setModalOpen(false);
-    setEditStudent(null);
-  }
-
-  function requestToggle(student: Student) {
-    if (student.is_active) {
-      setToggleTarget(student);
-      setConfirmOpen(true);
-    } else {
-      doToggle(student, true);
-    }
-  }
-
   async function doToggle(student: Student, activate: boolean) {
     try {
       await updateMutation.mutateAsync({
         id: student.id,
-        form: { is_active: activate },
+        data: { isActive: activate },
       });
       toast.success(
         activate
@@ -592,17 +687,18 @@ export function AdminStudentsPage() {
     }
   }
 
-  async function confirmToggle() {
-    if (!toggleTarget) return;
-    setConfirmOpen(false);
-    await doToggle(toggleTarget, false);
-    setToggleTarget(null);
+  async function doDelete(student: Student) {
+    try {
+      await deleteMutation.mutateAsync(student.id);
+      toast.success(`${student.name} deleted.`);
+    } catch {
+      toast.error("Failed to delete student");
+    }
   }
 
   return (
     <PageTransition>
       <div className="px-4 sm:px-6 py-6 space-y-6" data-ocid="students.page">
-        {/* Page header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">
@@ -615,16 +711,17 @@ export function AdminStudentsPage() {
             </p>
           </div>
           <Button
-            onClick={openAdd}
-            className="gradient-accent text-primary-foreground shadow-soft hover:shadow-elevated transition-slow shrink-0"
+            onClick={() => {
+              setEditStudent(null);
+              setModalOpen(true);
+            }}
+            className="gradient-accent text-primary-foreground shadow-soft shrink-0"
             data-ocid="students.add_button"
           >
-            <Plus className="w-4 h-4 mr-1.5" />
-            Add Student
+            <Plus className="w-4 h-4 mr-1.5" /> Add Student
           </Button>
         </div>
 
-        {/* Search + Filter bar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -664,10 +761,8 @@ export function AdminStudentsPage() {
           </Select>
         </div>
 
-        {/* Table */}
         <div className="glass-card rounded-2xl overflow-hidden shadow-soft">
-          {/* Desktop column headers */}
-          <div className="hidden md:grid grid-cols-[2.5rem_1fr_1.2fr_0.8fr_0.8fr_0.9fr_5.5rem_5rem] gap-3 px-5 py-3 border-b border-border/30 bg-muted/20">
+          <div className="hidden md:grid grid-cols-[2.5rem_1fr_1.2fr_0.8fr_0.8fr_0.9fr_5.5rem_7rem] gap-3 px-5 py-3 border-b border-border/30 bg-muted/20">
             <div />
             <SortHeader
               label="Name"
@@ -684,14 +779,14 @@ export function AdminStudentsPage() {
             </span>
             <SortHeader
               label="Fee"
-              sortKey="monthly_fee"
+              sortKey="monthlyFee"
               current={sortKey}
               dir={sortDir}
               onSort={handleSort}
             />
             <SortHeader
               label="Joined"
-              sortKey="joined_date"
+              sortKey="joinedDate"
               current={sortKey}
               dir={sortDir}
               onSort={handleSort}
@@ -703,8 +798,6 @@ export function AdminStudentsPage() {
               Actions
             </span>
           </div>
-
-          {/* Body */}
           <div className="divide-y divide-border/20">
             {isLoading ? (
               <div className="p-4">
@@ -727,31 +820,186 @@ export function AdminStudentsPage() {
                   !search && filterStatus === "all" ? "Add Student" : undefined
                 }
                 onAction={
-                  !search && filterStatus === "all" ? openAdd : undefined
+                  !search && filterStatus === "all"
+                    ? () => setModalOpen(true)
+                    : undefined
                 }
                 dataOcid="students.empty_state"
               />
             ) : (
               <AnimatePresence mode="wait">
                 {paginated.map((student, idx) => (
-                  <StudentRow
+                  <motion.div
                     key={student.id}
-                    student={student}
-                    index={idx + 1 + (page - 1) * PAGE_SIZE}
-                    onEdit={() => openEdit(student)}
-                    onToggle={() => requestToggle(student)}
-                    isToggling={
-                      updateMutation.isPending &&
-                      (toggleTarget?.id === student.id ||
-                        updateMutation.variables?.id === student.id)
-                    }
-                  />
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{
+                      delay: Math.min(idx, 8) * 0.04,
+                      duration: 0.25,
+                    }}
+                    className="group grid grid-cols-[auto_1fr] md:grid-cols-[2.5rem_1fr_1.2fr_0.8fr_0.8fr_0.9fr_5.5rem_7rem] gap-3 items-center px-5 py-3.5 hover:bg-muted/20 transition-fast cursor-pointer"
+                    onClick={() => {
+                      setViewStudent(student);
+                      setDetailsOpen(true);
+                    }}
+                    data-ocid={`students.item.${idx + 1 + (page - 1) * PAGE_SIZE}`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gradient-to-br ${avatarColor(student.name)}`}
+                    >
+                      {getInitials(student.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-fast">
+                        {student.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate md:hidden">
+                        {student.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground md:hidden">
+                        {student.class_} · {student.course} · ₹
+                        {student.monthlyFee.toLocaleString("en-IN")}/mo
+                      </p>
+                    </div>
+                    <p className="hidden md:block text-sm text-muted-foreground truncate min-w-0">
+                      {student.email}
+                    </p>
+                    <div className="hidden md:block">
+                      <p className="text-sm text-foreground truncate">
+                        {student.class_}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {student.course}
+                      </p>
+                    </div>
+                    <p className="hidden md:block text-sm font-medium text-foreground">
+                      ₹{student.monthlyFee.toLocaleString("en-IN")}
+                    </p>
+                    <p className="hidden md:block text-xs text-muted-foreground">
+                      {new Date(student.joinedDate).toLocaleDateString(
+                        "en-IN",
+                        { day: "2-digit", month: "short", year: "numeric" },
+                      )}
+                    </p>
+                    <div
+                      className="hidden md:flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
+                      <Switch
+                        checked={student.isActive}
+                        onCheckedChange={(v) => {
+                          if (!v) {
+                            setToggleTarget(student);
+                            setToggleConfirm(true);
+                          } else doToggle(student, true);
+                        }}
+                        aria-label={`Toggle ${student.name}`}
+                        data-ocid={`students.toggle.${idx + 1}`}
+                      />
+                      <Badge
+                        variant={student.isActive ? "default" : "secondary"}
+                        className={`text-xs shrink-0 ${student.isActive ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground"}`}
+                      >
+                        {student.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <div
+                      className="hidden md:flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewStudent(student);
+                          setDetailsOpen(true);
+                        }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-fast"
+                        data-ocid={`students.view_button.${idx + 1}`}
+                        aria-label={`View ${student.name}`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditStudent(student);
+                          setModalOpen(true);
+                        }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-fast opacity-0 group-hover:opacity-100"
+                        data-ocid={`students.edit_button.${idx + 1}`}
+                        aria-label={`Edit ${student.name}`}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteTarget(student);
+                          setConfirmOpen(true);
+                        }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-fast opacity-0 group-hover:opacity-100"
+                        data-ocid={`students.delete_button.${idx + 1}`}
+                        aria-label={`Delete ${student.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div
+                      className="md:hidden col-span-2 flex items-center justify-between pt-2 border-t border-border/20"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={student.isActive}
+                          onCheckedChange={(v) => {
+                            if (!v) {
+                              setToggleTarget(student);
+                              setToggleConfirm(true);
+                            } else doToggle(student, true);
+                          }}
+                          aria-label={`Toggle ${student.name}`}
+                        />
+                        <Badge
+                          variant={student.isActive ? "default" : "secondary"}
+                          className={`text-xs ${student.isActive ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : ""}`}
+                        >
+                          {student.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditStudent(student);
+                            setModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-fast"
+                          data-ocid={`students.edit_button.${idx + 1}`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteTarget(student);
+                            setConfirmOpen(true);
+                          }}
+                          className="flex items-center gap-1 text-xs text-destructive hover:text-destructive/80 transition-fast"
+                          data-ocid={`students.delete_button.${idx + 1}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </AnimatePresence>
             )}
           </div>
-
-          {/* Pagination */}
           {!isLoading && filtered.length > PAGE_SIZE && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-border/30 bg-muted/10">
               <p className="text-xs text-muted-foreground">
@@ -787,165 +1035,64 @@ export function AdminStudentsPage() {
         </div>
       </div>
 
-      {/* Modals */}
+      <StudentDetailsModal
+        student={viewStudent}
+        open={detailsOpen}
+        onClose={() => {
+          setDetailsOpen(false);
+          setViewStudent(null);
+        }}
+        onEdit={() => {
+          setEditStudent(viewStudent);
+          setModalOpen(true);
+        }}
+      />
       <StudentModal
         open={modalOpen}
         student={editStudent}
-        onClose={closeModal}
+        onClose={() => {
+          setModalOpen(false);
+          setEditStudent(null);
+        }}
       />
-
       <ConfirmModal
-        open={confirmOpen}
+        open={toggleConfirm}
         title="Deactivate Student?"
-        description={`This will mark ${toggleTarget?.name ?? "this student"} as inactive. They will no longer appear in active lists.`}
+        description={`This will mark ${toggleTarget?.name ?? "this student"} as inactive.`}
         confirmLabel="Deactivate"
         variant="warning"
-        onConfirm={confirmToggle}
+        onConfirm={async () => {
+          if (toggleTarget) {
+            setToggleConfirm(false);
+            await doToggle(toggleTarget, false);
+            setToggleTarget(null);
+          }
+        }}
         onCancel={() => {
-          setConfirmOpen(false);
+          setToggleConfirm(false);
           setToggleTarget(null);
         }}
         isLoading={updateMutation.isPending}
       />
+      <ConfirmModal
+        open={confirmOpen}
+        title="Delete Student?"
+        description={`This will permanently delete ${deleteTarget?.name ?? "this student"} and all their data.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={async () => {
+          if (deleteTarget) {
+            setConfirmOpen(false);
+            await doDelete(deleteTarget);
+            setDeleteTarget(null);
+          }
+        }}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setDeleteTarget(null);
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </PageTransition>
-  );
-}
-
-// ─── Student Row ─────────────────────────────────────────────────────────────
-
-interface StudentRowProps {
-  student: Student;
-  index: number;
-  onEdit: () => void;
-  onToggle: () => void;
-  isToggling: boolean;
-}
-
-function StudentRow({
-  student,
-  index,
-  onEdit,
-  onToggle,
-  isToggling,
-}: StudentRowProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ delay: Math.min(index - 1, 8) * 0.04, duration: 0.25 }}
-      className="group grid grid-cols-[auto_1fr] md:grid-cols-[2.5rem_1fr_1.2fr_0.8fr_0.8fr_0.9fr_5.5rem_5rem] gap-3 items-center px-5 py-3.5 hover:bg-muted/20 transition-fast"
-      data-ocid={`students.item.${index}`}
-    >
-      {/* Avatar */}
-      <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gradient-to-br ${avatarColor(student.name)}`}
-      >
-        {getInitials(student.name)}
-      </div>
-
-      {/* Name + Course (always visible) */}
-      <div className="min-w-0">
-        <p className="font-medium text-sm text-foreground truncate">
-          {student.name}
-        </p>
-        <p className="text-xs text-muted-foreground truncate md:hidden">
-          {student.email}
-        </p>
-        <p className="text-xs text-muted-foreground md:hidden">
-          {student.class_} · {student.course} · {formatFee(student.monthly_fee)}
-          /mo
-        </p>
-      </div>
-
-      {/* Email */}
-      <p className="hidden md:block text-sm text-muted-foreground truncate min-w-0">
-        {student.email}
-      </p>
-
-      {/* Class */}
-      <p className="hidden md:block text-sm text-foreground truncate min-w-0">
-        <span>{student.class_}</span>
-        <span className="text-muted-foreground text-xs block truncate">
-          {student.course}
-        </span>
-      </p>
-
-      {/* Monthly Fee */}
-      <p className="hidden md:block text-sm font-medium text-foreground tabular-nums">
-        {formatFee(student.monthly_fee)}
-      </p>
-
-      {/* Joined */}
-      <p className="hidden md:block text-xs text-muted-foreground">
-        {formatDate(student.joined_date)}
-      </p>
-
-      {/* Status badge + switch */}
-      <div className="hidden md:flex items-center gap-2">
-        <Switch
-          checked={student.is_active}
-          onCheckedChange={onToggle}
-          disabled={isToggling}
-          aria-label={`Toggle status for ${student.name}`}
-          data-ocid={`students.toggle.${index}`}
-        />
-        <Badge
-          variant={student.is_active ? "default" : "secondary"}
-          className={`text-xs shrink-0 ${
-            student.is_active
-              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-              : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {student.is_active ? "Active" : "Inactive"}
-        </Badge>
-      </div>
-
-      {/* Mobile status row (shown below main info on small screens) */}
-      <div className="md:hidden col-span-2 flex items-center justify-between pt-2 border-t border-border/20">
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={student.is_active}
-            onCheckedChange={onToggle}
-            disabled={isToggling}
-            aria-label={`Toggle ${student.name}`}
-          />
-          <Badge
-            variant={student.is_active ? "default" : "secondary"}
-            className={`text-xs ${
-              student.is_active
-                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                : ""
-            }`}
-          >
-            {student.is_active ? "Active" : "Inactive"}
-          </Badge>
-        </div>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-fast"
-          data-ocid={`students.edit_button.${index}`}
-          aria-label={`Edit ${student.name}`}
-        >
-          <Edit2 className="w-3.5 h-3.5" />
-          Edit
-        </button>
-      </div>
-
-      {/* Desktop actions */}
-      <div className="hidden md:flex items-center gap-1">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-fast opacity-0 group-hover:opacity-100"
-          data-ocid={`students.edit_button.${index}`}
-          aria-label={`Edit ${student.name}`}
-        >
-          <Edit2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </motion.div>
   );
 }

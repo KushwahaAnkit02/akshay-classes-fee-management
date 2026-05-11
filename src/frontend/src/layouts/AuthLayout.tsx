@@ -1,4 +1,3 @@
-import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useAuthStore } from "@/store/authStore";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
@@ -8,7 +7,8 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ requiredRole }: AuthLayoutProps) {
-  const { isAuthenticated, isLoading, role } = useAuthStore();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
+  const role = user?.role;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,16 +18,15 @@ export function AuthLayout({ requiredRole }: AuthLayoutProps) {
       return;
     }
     if (requiredRole && role && role !== requiredRole) {
-      const redirect =
-        role === "admin" ? "/admin/dashboard" : "/student/dashboard";
-      navigate({ to: redirect });
+      const dest = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      navigate({ to: dest });
     }
   }, [isAuthenticated, isLoading, role, requiredRole, navigate]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSkeleton variant="page" />
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

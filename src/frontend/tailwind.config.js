@@ -33,6 +33,14 @@ export default {
           DEFAULT: "oklch(var(--destructive) / <alpha-value>)",
           foreground: "oklch(var(--destructive-foreground))",
         },
+        success: {
+          DEFAULT: "oklch(var(--success) / <alpha-value>)",
+          foreground: "oklch(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "oklch(var(--warning) / <alpha-value>)",
+          foreground: "oklch(var(--warning-foreground))",
+        },
         muted: {
           DEFAULT: "oklch(var(--muted) / <alpha-value>)",
           foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
@@ -82,6 +90,8 @@ export default {
         soft: "0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)",
         elevated: "0 20px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)",
         glow: "0 0 30px rgba(114, 178, 238, 0.2)",
+        "glass-soft": "0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.1)",
+        "glass-hover": "0 12px 32px rgba(0, 0, 0, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.15)",
       },
       keyframes: {
         "fade-in": {

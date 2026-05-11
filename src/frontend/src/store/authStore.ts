@@ -1,50 +1,43 @@
-import type { Admin, AuthState, Profile, Role, User } from "@/types";
+import { validateLogin } from "@/services/authService";
+import type { AuthUser, Role } from "@/types/auth";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface AuthStore extends AuthState {
-  setUser: (user: User | null) => void;
-  setProfile: (profile: Profile | null) => void;
-  setAdmin: (admin: Admin | null) => void;
-  setRole: (role: Role | null) => void;
-  setLoading: (loading: boolean) => void;
-  setAuthenticated: (authenticated: boolean) => void;
+interface AuthStore {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string, role: Role) => AuthUser | null;
   logout: () => void;
+  setUser: (user: AuthUser | null) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
       user: null,
-      profile: null,
-      admin: null,
-      role: null,
-      isLoading: true,
       isAuthenticated: false,
+      isLoading: false,
 
-      setUser: (user) => set({ user }),
-      setProfile: (profile) => set({ profile }),
-      setAdmin: (admin) => set({ admin }),
-      setRole: (role) => set({ role }),
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
       setLoading: (isLoading) => set({ isLoading }),
-      setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+
+      login: (email, password, role) => {
+        const user = validateLogin(email, password, role);
+        if (user) {
+          set({ user, isAuthenticated: true, isLoading: false });
+        }
+        return user;
+      },
+
       logout: () =>
-        set({
-          user: null,
-          profile: null,
-          admin: null,
-          role: null,
-          isAuthenticated: false,
-          isLoading: false,
-        }),
+        set({ user: null, isAuthenticated: false, isLoading: false }),
     }),
     {
-      name: "akshay-auth-store",
+      name: "akshay_auth",
       partialize: (state) => ({
         user: state.user,
-        profile: state.profile,
-        admin: state.admin,
-        role: state.role,
         isAuthenticated: state.isAuthenticated,
       }),
     },

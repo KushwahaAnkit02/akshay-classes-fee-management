@@ -1,76 +1,56 @@
-# Design Brief
+# Design Brief — Akshay Classes Fee Management System
 
-## Direction
-
-**Akshay Classes Fee Management Portal** — Premium SaaS dashboard with glassmorphism for modern educational fee tracking.
+## Visual Direction
+Premium SaaS dashboard for educational fee management with glassmorphism, cyan-teal tech aesthetic, localStorage-backed state. Comparable to Linear, Vercel, Stripe dashboards.
 
 ## Tone
-
-Refined, professional, premium tech aesthetic inspired by Linear, Vercel, and Stripe. Clean hierarchy with intentional depth and confidence.
+Refined, professional, accessible. Tech-forward without coldness. Educational institutions and student users deserve premium UX that feels trustworthy and modern.
 
 ## Differentiation
-
-Frosted glass cards with subtle blur effects, cyan-teal accent for modern tech feel, smooth micro-animations that feel responsive without distraction.
+Frosted glass cards with backdrop-blur and inset highlights, cyan-teal primary accents (modern educational identity), smooth micro-interactions responsive but not frenetic, intentional depth through layering and soft shadows, zero generic AI defaults.
 
 ## Color Palette
-
-| Token       | Light OKLCH       | Dark OKLCH         | Role                              |
-|-------------|------------------|-------------------|-----------------------------------|
-| background  | 0.99 0.005 260   | 0.12 0.01 260     | Base surface                      |
-| foreground  | 0.15 0.01 260    | 0.95 0.01 260     | Primary text                      |
-| card        | 1.0 0.0 0        | 0.16 0.015 260    | Elevated surfaces, cards, modals  |
-| primary     | 0.5 0.22 265     | 0.72 0.18 190     | CTAs, active states               |
-| accent      | 0.5 0.22 265     | 0.72 0.18 190     | Cyan-teal highlights              |
-| muted       | 0.95 0.01 260    | 0.22 0.02 260     | Secondary content                 |
-| destructive | 0.55 0.22 25     | 0.6 0.2 25        | Error states                      |
+| Token | Light OKLCH | Dark OKLCH | Usage |
+|-------|-------------|-----------|-------|
+| background | 0.98 0.01 260 | 0.11 0.01 260 | Base surface |
+| foreground | 0.15 0.01 260 | 0.96 0.01 260 | Primary text |
+| card | 0.99 0.0 0 | 0.15 0.02 260 | Elevated cards, glass surfaces |
+| primary | 0.52 0.24 192 | 0.70 0.22 192 | CTAs, active states, cyan-teal |
+| accent | 0.52 0.24 192 | 0.70 0.22 192 | Highlights, interactive focus |
+| success | 0.62 0.2 155 | 0.68 0.2 155 | Paid fees, payment confirmed |
+| warning | 0.75 0.2 85 | 0.72 0.2 85 | Pending fees, overdue caution |
+| destructive | 0.58 0.24 25 | 0.62 0.22 25 | Delete action, unpaid state |
+| muted | 0.92 0.02 260 | 0.20 0.02 260 | Secondary content, disabled |
 
 ## Typography
+**Display**: Space Grotesk (geometric, tech-forward) | **Body**: DM Sans (clean, readable) | **Mono**: JetBrains Mono (financial data)
 
-- **Display**: Space Grotesk — Geometric, tech-forward, headlines
-- **Body**: DM Sans — Clean, modern, readable
-- **Mono**: JetBrains Mono — Data and amounts
-- **Scale**: Hero `text-5xl font-bold tracking-tight` / H2 `text-3xl font-bold` / Label `text-sm uppercase` / Body `text-base`
-
-## Elevation & Depth
-
-Layered depth through glass cards with `backdrop-blur-md`, soft shadows, transparent borders at 30-50% opacity. Dark mode uses 0.12 L background, 0.16 L cards.
+**Hierarchy**: H1 `text-5xl font-bold tracking-tight` | H2 `text-3xl font-bold` | H3 `text-lg font-semibold` | Body `text-base leading-relaxed` | Caption `text-xs uppercase tracking-wide`
 
 ## Structural Zones
+| Zone | Treatment | Notes |
+|------|-----------|-------|
+| Header | glass-header backdrop blur | Sticky, elevated, gradient accent |
+| Sidebar | bg-sidebar/10 subtle border-r | Icon-forward on mobile, collapse on small |
+| Content | bg-background + glass-card sections | Alternate muted/5 for rhythm |
+| Cards | glass-card + border/35 opacity | 12px radius, hover: shadow-glass-hover |
+| Forms | Input bg-input ring-primary | Focus: cyan ring, smooth transition |
+| Tables | glass-card rows, zebra stripe muted/5 | High contrast text, clear sorting |
 
-| Zone    | Background          | Border       | Notes                        |
-|---------|---------------------|--------------|------------------------------|
-| Header  | glass-header        | border-b/40  | Frosted glass, gradient      |
-| Sidebar | bg-sidebar/10       | border-r/20  | Semi-transparent             |
-| Content | bg-background       | —            | Alternate card sections      |
-| Cards   | glass-card backdrop | border/30-50 | 12px radius, hover scale     |
-| Footer  | bg-muted/20         | border-t/40  | Minimal, aligned             |
+## Elevation & Depth
+Layered through card backgrounds (light 0.99L / dark 0.15L), glass blur + transparency, dual-shadow system: `shadow-soft` for ambient light, `shadow-glass-soft` for inset surface highlight. Never full opacity — all surfaces breathe transparency.
 
-## Spacing & Rhythm
-
-24px section gaps, 16px card padding, 4-8px micro-spacing. Generous whitespace for premium productivity feel.
-
-## Component Patterns
-
-- **Buttons**: Solid primary, rounded-lg, soft shadow on hover, cyan accent for CTAs
-- **Cards**: glass-card backdrop blur, 12px radius, transparent border, hover scale +2%
-- **Badges**: Rounded-full, muted background, colored text
-- **Forms**: Cyan focus ring, clean focus state, muted placeholder
-
-## Motion
-
-- **Entrance**: `slide-up` + `fade-in` (0.3s) for sections, `scale-in` for modals
-- **Hover**: `transition-fast` (0.2s), subtle scale 1.02x or shadow elevation
-- **Decorative**: `float` (6s infinite), `pulse-soft` (3s infinite) for pending states
-- **Transitions**: `fade-in` (0.3s) with staggered children
+## Motion & Interaction
+**Entrance**: slide-up + fade-in 0.3s for page sections | **Hover**: transition-fast 0.2s, scale 1.02 + shadow-glass-hover | **Modals**: scale-in 0.3s with backdrop fade-in | **Loading**: pulse-soft infinite for pending fees | **Toast**: slide-up 0.3s
 
 ## Constraints
+- All colors via CSS variables in OKLCH, no hex/rgb literals
+- Chroma ≤0.25 for UI tokens, higher only in chart colors
+- Blur only on cards/glass surfaces (header, modals)
+- Animations 0.2–0.5s, all use cubic-bezier(0.4, 0, 0.2, 1)
+- AA+ contrast verified in both light and dark modes
+- localStorage state changes trigger toast + skeleton loader state
+- Mobile-first responsive: sidebar collapses on sm screens
 
-- Chroma under 0.25 (except chart accents)
-- Blur only on cards/modals
-- Animations max 0.5s
-- All colors via CSS variables
-- Dark mode tuned per zone
-
-## Signature Detail
-
-Glassmorphism cards with `backdrop-blur-md` + transparent borders (30-50% opacity), cyan-teal accents, soft elevation shadows. Premium SaaS distinctiveness comparable to Linear and Vercel.
+## Signature Details
+Frosted glass cards (`glass-card` class) with `backdrop-blur-md` + inset highlight shadow (`shadow-glass-soft`) | Cyan-teal primary (0.52 L, 0.24 C) for modern educational identity | Soft elevation shadows replace harsh borders | Generous spacing (24px sections, 16px card padding) reflects premium SaaS confidence

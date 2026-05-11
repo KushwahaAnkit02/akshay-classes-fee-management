@@ -6,935 +6,551 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  useAddPayment,
   useDeletePayment,
-  usePaymentsByAdmin,
-  useRecordPayment,
-  useUpdatePayment,
+  usePayments,
 } from "@/hooks/usePayments";
-import { useStudentsByAdmin } from "@/hooks/useStudents";
-import type { MonthlyPayment, PaymentMethod, UpdatePaymentForm } from "@/types";
+import { useStudents } from "@/hooks/useStudents";
+import type { Payment, PaymentMethod } from "@/types/payment";
+import { formatMonth, getCurrentMonthKey } from "@/utils/formatters";
 import {
   BookOpen,
   Calendar,
-  Check,
-  CreditCard,
-  Edit2,
-  Filter,
   IndianRupee,
-  PlusCircle,
-  RotateCcw,
+  Plus,
   Search,
   Trash2,
-  User,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+const METHOD_BADGE: Record<
+  PaymentMethod,
+  { label: string; className: string }
+> = {
+  cash: { label: "Cash", className: "bg-emerald-500/15 text-emerald-600" },
+  online: { label: "Online", className: "bg-blue-500/15 text-blue-600" },
+  cheque: { label: "Cheque", className: "bg-amber-500/15 text-amber-600" },
+  card: { label: "Card", className: "bg-purple-500/15 text-purple-600" },
+};
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+const PM_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "cash", label: "Cash" },
   { value: "online", label: "Online Transfer" },
   { value: "cheque", label: "Cheque" },
   { value: "card", label: "Card" },
 ];
 
-const METHOD_BADGE: Record<
-  PaymentMethod,
-  { label: string; className: string }
-> = {
-  cash: {
-    label: "Cash",
-    className:
-      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-  },
-  online: {
-    label: "Online",
-    className:
-      "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
-  },
-  cheque: {
-    label: "Cheque",
-    className:
-      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
-  },
-  card: {
-    label: "Card",
-    className:
-      "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25",
-  },
-};
-
-function formatMonth(ym: string): string {
-  const [y, m] = ym.split("-");
-  const date = new Date(Number(y), Number(m) - 1);
-  return date.toLocaleString("en-IN", { month: "short", year: "numeric" });
+/* ---------- Record Payment Modal ---------- */
+interface RecordPaymentModalProps {
+  open: boolean;
+  onClose: () => void;
 }
 
-function formatDate(ts: bigint): string {
-  return new Date(Number(ts) / 1_000_000).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
+  const { data: students = [] } = useStudents();
+  const addPayment = useAddPayment();
+  const activeStudents = students.filter((s) => s.isActive);
 
-function tsToDateInput(ts: bigint): string {
-  const d = new Date(Number(ts) / 1_000_000);
-  return d.toISOString().split("T")[0];
-}
-
-function todayStr(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
-function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-// ─── Record Payment Form ──────────────────────────────────────────────────────
-
-interface RecordFormState {
-  student_id: string;
-  month: string;
-  amount_paid: string;
-  payment_method: PaymentMethod;
-  payment_date: string;
-  notes: string;
-  studentSearch: string;
-  studentDropdownOpen: boolean;
-}
-
-function RecordPaymentCard({
-  students,
-}: {
-  students: { id: string; name: string; class_: string }[];
-}) {
-  const recordPayment = useRecordPayment();
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const [form, setForm] = useState<RecordFormState>({
-    student_id: "",
-    month: currentMonth(),
-    amount_paid: "",
-    payment_method: "cash",
-    payment_date: todayStr(),
+  const [form, setForm] = useState({
+    studentId: "",
+    month: getCurrentMonthKey(),
+    amountPaid: 0,
+    paymentMethod: "cash" as PaymentMethod,
     notes: "",
-    studentSearch: "",
-    studentDropdownOpen: false,
+    paymentDate: new Date().toISOString().split("T")[0],
   });
+  const [errors, setErrors] = useState<{
+    studentId?: string;
+    amountPaid?: string;
+  }>({});
 
-  const filteredStudents = useMemo(
-    () =>
-      students.filter((s) =>
-        `${s.name} ${s.class_}`
-          .toLowerCase()
-          .includes(form.studentSearch.toLowerCase()),
-      ),
-    [students, form.studentSearch],
-  );
+  const selectedStudent = activeStudents.find((s) => s.id === form.studentId);
 
-  const selectedStudent = students.find((s) => s.id === form.student_id);
-
-  function set<K extends keyof RecordFormState>(k: K, v: RecordFormState[K]) {
-    setForm((p) => ({ ...p, [k]: v }));
+  function handleStudentChange(id: string) {
+    const s = activeStudents.find((st) => st.id === id);
+    setForm((p) => ({
+      ...p,
+      studentId: id,
+      amountPaid: s?.monthlyFee ?? p.amountPaid,
+    }));
+    if (errors.studentId) setErrors((e) => ({ ...e, studentId: undefined }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.student_id) {
-      toast.error("Please select a student");
-      return;
-    }
-    const amt = Number(form.amount_paid);
-    if (!amt || amt <= 0) {
-      toast.error("Enter a valid amount");
+    const errs: { studentId?: string; amountPaid?: string } = {};
+    if (!form.studentId) errs.studentId = "Select a student";
+    if (!form.amountPaid || form.amountPaid <= 0)
+      errs.amountPaid = "Amount must be > 0";
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
     try {
-      await recordPayment.mutateAsync({
-        student_id: form.student_id,
-        month: form.month,
-        amount_paid: amt,
-        payment_method: form.payment_method,
-        payment_date: form.payment_date,
-        notes: form.notes || undefined,
-      });
-      toast.success("Payment recorded successfully!");
+      await addPayment.mutateAsync(form);
+      toast.success(
+        `Payment of ₹${form.amountPaid.toLocaleString("en-IN")} recorded for ${selectedStudent?.name}!`,
+      );
       setForm({
-        student_id: "",
-        month: currentMonth(),
-        amount_paid: "",
-        payment_method: "cash",
-        payment_date: todayStr(),
+        studentId: "",
+        month: getCurrentMonthKey(),
+        amountPaid: 0,
+        paymentMethod: "cash",
         notes: "",
-        studentSearch: "",
-        studentDropdownOpen: false,
+        paymentDate: new Date().toISOString().split("T")[0],
       });
-    } catch {
-      toast.error("Failed to record payment. Please try again.");
-    }
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="glass-card rounded-2xl p-6 shadow-soft"
-      data-ocid="payments.record_card"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-soft">
-          <PlusCircle className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <div>
-          <h2 className="font-display font-semibold text-foreground text-lg">
-            Record Payment
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Add a new fee payment entry
-          </p>
-        </div>
-      </div>
-
-      <form ref={formRef} onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {/* Student Picker */}
-          <div
-            className="space-y-1.5 relative"
-            data-ocid="payments.student_select"
-          >
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Student
-            </Label>
-            <button
-              type="button"
-              onClick={() =>
-                set("studentDropdownOpen", !form.studentDropdownOpen)
-              }
-              className="w-full h-10 px-3 rounded-xl border border-input bg-background/50 text-sm text-left flex items-center justify-between gap-2 transition-fast hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <span
-                className={
-                  selectedStudent ? "text-foreground" : "text-muted-foreground"
-                }
-              >
-                {selectedStudent
-                  ? `${selectedStudent.name} — ${selectedStudent.class_}`
-                  : "Select student..."}
-              </span>
-              <User className="w-4 h-4 text-muted-foreground shrink-0" />
-            </button>
-            <AnimatePresence>
-              {form.studentDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 right-0 z-30 mt-1.5 glass-card rounded-xl shadow-elevated overflow-hidden"
-                >
-                  <div className="p-2 border-b border-border/30">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                      <input
-                        value={form.studentSearch}
-                        onChange={(e) => set("studentSearch", e.target.value)}
-                        placeholder="Search student..."
-                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-transparent rounded-lg border border-transparent focus:outline-none focus:border-primary/40 placeholder:text-muted-foreground"
-                        data-ocid="payments.student_search_input"
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredStudents.length === 0 ? (
-                      <p className="py-6 text-center text-xs text-muted-foreground">
-                        No students found
-                      </p>
-                    ) : (
-                      filteredStudents.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => {
-                            set("student_id", s.id);
-                            set("studentDropdownOpen", false);
-                            set("studentSearch", "");
-                          }}
-                          className="w-full px-3 py-2.5 text-sm text-left flex items-center gap-2.5 hover:bg-primary/8 transition-fast"
-                        >
-                          <div className="w-7 h-7 rounded-full gradient-accent flex items-center justify-center shrink-0">
-                            <span className="text-xs font-semibold text-primary-foreground">
-                              {s.name[0]}
-                            </span>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate">
-                              {s.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {s.class_}
-                            </p>
-                          </div>
-                          {form.student_id === s.id && (
-                            <Check className="w-3.5 h-3.5 text-primary ml-auto shrink-0" />
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Month */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Month
-            </Label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="month"
-                value={form.month}
-                onChange={(e) => set("month", e.target.value)}
-                required
-                className="w-full h-10 pl-10 pr-3 rounded-xl border border-input bg-background/50 text-sm text-foreground transition-fast focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                data-ocid="payments.month_input"
-              />
-            </div>
-          </div>
-
-          {/* Amount */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Amount Paid
-            </Label>
-            <div className="relative">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="number"
-                min="1"
-                step="1"
-                value={form.amount_paid}
-                onChange={(e) => set("amount_paid", e.target.value)}
-                placeholder="0"
-                required
-                className="pl-10 rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-ring"
-                data-ocid="payments.amount_input"
-              />
-            </div>
-          </div>
-
-          {/* Method */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Payment Method
-            </Label>
-            <div className="relative">
-              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <select
-                value={form.payment_method}
-                onChange={(e) =>
-                  set("payment_method", e.target.value as PaymentMethod)
-                }
-                className="w-full h-10 pl-10 pr-8 rounded-xl border border-input bg-background/50 text-sm text-foreground appearance-none transition-fast focus:outline-none focus:ring-2 focus:ring-ring"
-                data-ocid="payments.method_select"
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Date */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Payment Date
-            </Label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="date"
-                value={form.payment_date}
-                onChange={(e) => set("payment_date", e.target.value)}
-                required
-                className="pl-10 rounded-xl border-input bg-background/50 focus:ring-2 focus:ring-ring"
-                data-ocid="payments.date_input"
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Notes{" "}
-              <span className="normal-case text-muted-foreground/60">
-                (optional)
-              </span>
-            </Label>
-            <Textarea
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              placeholder="Any additional notes..."
-              rows={1}
-              className="rounded-xl border-input bg-background/50 resize-none focus:ring-2 focus:ring-ring"
-              data-ocid="payments.notes_textarea"
-            />
-          </div>
-        </div>
-
-        <div className="mt-5 flex justify-end">
-          <Button
-            type="submit"
-            disabled={recordPayment.isPending}
-            className="gradient-accent text-primary-foreground px-8 rounded-xl font-medium shadow-soft hover:shadow-elevated transition-smooth disabled:opacity-60"
-            data-ocid="payments.submit_button"
-          >
-            {recordPayment.isPending ? (
-              <span className="flex items-center gap-2">
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{
-                    repeat: Number.POSITIVE_INFINITY,
-                    duration: 1,
-                    ease: "linear",
-                  }}
-                  className="block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
-                />
-                Recording...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <PlusCircle className="w-4 h-4" />
-                Record Payment
-              </span>
-            )}
-          </Button>
-        </div>
-      </form>
-    </motion.div>
-  );
-}
-
-// ─── Edit Payment Modal ───────────────────────────────────────────────────────
-
-function EditPaymentModal({
-  payment,
-  studentName,
-  onClose,
-}: {
-  payment: MonthlyPayment;
-  studentName: string;
-  onClose: () => void;
-}) {
-  const updatePayment = useUpdatePayment();
-  const [form, setForm] = useState<
-    UpdatePaymentForm & { payment_date: string }
-  >({
-    amount_paid: Number(payment.amount_paid),
-    payment_method: payment.payment_method,
-    payment_date: tsToDateInput(payment.payment_date),
-    notes: payment.notes ?? "",
-  });
-
-  function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
-    setForm((p) => ({ ...p, [k]: v }));
-  }
-
-  async function handleSave() {
-    try {
-      await updatePayment.mutateAsync({
-        id: payment.id,
-        form: {
-          amount_paid: form.amount_paid,
-          payment_method: form.payment_method,
-          payment_date: form.payment_date,
-          notes: form.notes || undefined,
-        },
-      });
-      toast.success("Payment updated successfully!");
+      setErrors({});
       onClose();
     } catch {
-      toast.error("Failed to update payment.");
+      toast.error("Failed to record payment");
     }
   }
 
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 16 }}
-        transition={{ type: "spring", damping: 26, stiffness: 300 }}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-lg px-4"
-        data-ocid="payments.edit_dialog"
-      >
-        <div className="glass-card rounded-2xl p-6 shadow-elevated">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="font-display font-semibold text-foreground text-lg">
-                Edit Payment
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {studentName} · {formatMonth(payment.month)}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-fast"
-              data-ocid="payments.edit_close_button"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Amount Paid (₹)
-              </Label>
-              <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="number"
-                  min="1"
-                  value={form.amount_paid}
-                  onChange={(e) => set("amount_paid", Number(e.target.value))}
-                  className="pl-10 rounded-xl border-input bg-background/50"
-                  data-ocid="payments.edit_amount_input"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Method
-                </Label>
-                <select
-                  value={form.payment_method}
-                  onChange={(e) =>
-                    set("payment_method", e.target.value as PaymentMethod)
-                  }
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-background/50 text-sm text-foreground appearance-none transition-fast focus:outline-none focus:ring-2 focus:ring-ring"
-                  data-ocid="payments.edit_method_select"
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 24 }}
+            transition={{ type: "spring", damping: 26, stiffness: 320 }}
+            className="fixed inset-x-4 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-14 sm:w-full sm:max-w-lg z-50"
+            data-ocid="record_payment_modal.dialog"
+          >
+            <div className="glass-card rounded-2xl shadow-elevated overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-border/30">
+                <div>
+                  <h2 className="font-display font-semibold text-xl text-foreground">
+                    Record Payment
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Add a new payment transaction
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-fast"
+                  data-ocid="record_payment_modal.close_button"
                 >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Payment Date
-                </Label>
-                <Input
-                  type="date"
-                  value={form.payment_date}
-                  onChange={(e) => set("payment_date", e.target.value)}
-                  className="rounded-xl border-input bg-background/50"
-                  data-ocid="payments.edit_date_input"
-                />
-              </div>
+              <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+                <div className="space-y-1.5">
+                  <Label>
+                    Student <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={form.studentId}
+                    onValueChange={handleStudentChange}
+                  >
+                    <SelectTrigger
+                      className={errors.studentId ? "border-destructive" : ""}
+                      data-ocid="record_payment_modal.student_select"
+                    >
+                      <SelectValue placeholder="Select student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeStudents.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} — ₹{s.monthlyFee.toLocaleString("en-IN")}/mo
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.studentId && (
+                    <p
+                      className="text-xs text-destructive"
+                      data-ocid="record_payment_modal.student_error"
+                    >
+                      {errors.studentId}
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Month</Label>
+                    <Input
+                      type="month"
+                      value={form.month}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, month: e.target.value }))
+                      }
+                      data-ocid="record_payment_modal.month_input"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>
+                      Amount (₹) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.amountPaid || ""}
+                      onChange={(e) => {
+                        setForm((p) => ({
+                          ...p,
+                          amountPaid: Number(e.target.value),
+                        }));
+                        if (errors.amountPaid)
+                          setErrors((er) => ({ ...er, amountPaid: undefined }));
+                      }}
+                      className={errors.amountPaid ? "border-destructive" : ""}
+                      data-ocid="record_payment_modal.amount_input"
+                    />
+                    {errors.amountPaid && (
+                      <p className="text-xs text-destructive">
+                        {errors.amountPaid}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Payment Method</Label>
+                    <Select
+                      value={form.paymentMethod}
+                      onValueChange={(v) =>
+                        setForm((p) => ({
+                          ...p,
+                          paymentMethod: v as PaymentMethod,
+                        }))
+                      }
+                    >
+                      <SelectTrigger data-ocid="record_payment_modal.method_select">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PM_METHODS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Payment Date</Label>
+                    <Input
+                      type="date"
+                      value={form.paymentDate}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, paymentDate: e.target.value }))
+                      }
+                      data-ocid="record_payment_modal.date_input"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Notes (optional)</Label>
+                  <Textarea
+                    placeholder="e.g. UPI reference, cheque no..."
+                    value={form.notes}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, notes: e.target.value }))
+                    }
+                    rows={2}
+                    data-ocid="record_payment_modal.notes_input"
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={onClose}
+                    data-ocid="record_payment_modal.cancel_button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 gradient-accent text-primary-foreground"
+                    disabled={addPayment.isPending}
+                    data-ocid="record_payment_modal.submit_button"
+                  >
+                    {addPayment.isPending ? "Recording..." : "Record Payment"}
+                  </Button>
+                </div>
+              </form>
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Notes
-              </Label>
-              <Textarea
-                value={form.notes as string}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="Additional notes..."
-                rows={2}
-                className="rounded-xl border-input bg-background/50 resize-none"
-                data-ocid="payments.edit_notes_textarea"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <Button
-              variant="outline"
-              className="flex-1 rounded-xl"
-              onClick={onClose}
-              data-ocid="payments.edit_cancel_button"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1 gradient-accent text-primary-foreground rounded-xl shadow-soft"
-              onClick={handleSave}
-              disabled={updatePayment.isPending}
-              data-ocid="payments.edit_save_button"
-            >
-              {updatePayment.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </div>
-      </motion.div>
-    </>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export function AdminPaymentsPage() {
-  const { data: payments = [], isLoading: loadingPayments } =
-    usePaymentsByAdmin();
-  const { data: students = [], isLoading: loadingStudents } =
-    useStudentsByAdmin();
-  const deletePayment = useDeletePayment();
+  const { data: payments = [], isLoading: paymentsLoading } = usePayments();
+  const { data: students = [], isLoading: studentsLoading } = useStudents();
+  const deleteMutation = useDeletePayment();
 
-  const [filterMonth, setFilterMonth] = useState("");
-  const [filterStudentId, setFilterStudentId] = useState("");
-  const [filterMethod, setFilterMethod] = useState<PaymentMethod | "">("");
-  const [editPayment, setEditPayment] = useState<MonthlyPayment | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const studentMap = useMemo(
-    () => new Map(students.map((s) => [s.id, s])),
-    [students],
+  const [search, setSearch] = useState("");
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [filterMethod, setFilterMethod] = useState<PaymentMethod | "all">(
+    "all",
   );
+  const [deleteTarget, setDeleteTarget] = useState<Payment | null>(null);
+  const [recordOpen, setRecordOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
-  const sorted = useMemo(
-    () =>
-      [...payments].sort(
-        (a, b) => Number(b.payment_date) - Number(a.payment_date),
-      ),
-    [payments],
-  );
+  const studentMap = new Map(students.map((s) => [s.id, s]));
+
+  const months = useMemo(() => {
+    const set = new Set(payments.map((p) => p.month));
+    return Array.from(set).sort().reverse();
+  }, [payments]);
 
   const filtered = useMemo(() => {
-    return sorted.filter((p) => {
-      if (filterMonth && p.month !== filterMonth) return false;
-      if (filterStudentId && p.student_id !== filterStudentId) return false;
-      if (filterMethod && p.payment_method !== filterMethod) return false;
-      return true;
-    });
-  }, [sorted, filterMonth, filterStudentId, filterMethod]);
+    let list = [...payments];
+    const q = search.toLowerCase();
+    if (q)
+      list = list.filter(
+        (p) =>
+          p.studentName.toLowerCase().includes(q) ||
+          (studentMap.get(p.studentId)?.name ?? "").toLowerCase().includes(q),
+      );
+    if (filterMonth !== "all")
+      list = list.filter((p) => p.month === filterMonth);
+    if (filterMethod !== "all")
+      list = list.filter((p) => p.paymentMethod === filterMethod);
+    return list.sort(
+      (a, b) =>
+        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+    );
+  }, [payments, search, filterMonth, filterMethod, studentMap]);
 
-  function resetFilters() {
-    setFilterMonth("");
-    setFilterStudentId("");
-    setFilterMethod("");
-  }
-
-  const isFiltered = filterMonth || filterStudentId || filterMethod;
-  const isLoading = loadingPayments || loadingStudents;
-
-  async function handleDelete() {
-    if (!deleteId) return;
-    try {
-      await deletePayment.mutateAsync(deleteId);
-      toast.success("Payment deleted.");
-    } catch {
-      toast.error("Failed to delete payment.");
-    } finally {
-      setDeleteId(null);
-    }
-  }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalAmount = filtered.reduce((sum, p) => sum + p.amountPaid, 0);
 
   return (
     <PageTransition>
-      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="flex items-center gap-3"
-        >
-          <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-soft">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
-          </div>
+      <div className="px-4 sm:px-6 py-6 space-y-6" data-ocid="payments.page">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-display font-bold text-2xl text-foreground">
-              Payments
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Payment History
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Record and manage all fee payments
+            <p className="text-sm text-muted-foreground mt-0.5">
+              All recorded payment transactions
             </p>
           </div>
-        </motion.div>
-
-        {/* Record Payment Form */}
-        {loadingStudents ? (
-          <LoadingSkeleton variant="card" rows={2} />
-        ) : (
-          <RecordPaymentCard students={students} />
-        )}
-
-        {/* Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="glass-card rounded-2xl p-4 shadow-soft"
-          data-ocid="payments.filter_bar"
-        >
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex items-center gap-1.5 text-muted-foreground shrink-0">
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">Filters</span>
+          <div className="flex items-center gap-3">
+            <div className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2">
+              <IndianRupee className="w-4 h-4 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Total (filtered)
+                </p>
+                <p className="font-display font-bold text-foreground">
+                  ₹{totalAmount.toLocaleString("en-IN")}
+                </p>
+              </div>
             </div>
-
-            {/* Month filter */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Month</Label>
-              <input
-                type="month"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-                className="h-9 px-3 rounded-xl border border-input bg-background/50 text-sm text-foreground transition-fast focus:outline-none focus:ring-2 focus:ring-ring"
-                data-ocid="payments.filter_month_input"
-              />
-            </div>
-
-            {/* Student filter */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Student</Label>
-              <select
-                value={filterStudentId}
-                onChange={(e) => setFilterStudentId(e.target.value)}
-                className="h-9 px-3 rounded-xl border border-input bg-background/50 text-sm text-foreground appearance-none transition-fast focus:outline-none focus:ring-2 focus:ring-ring min-w-[160px]"
-                data-ocid="payments.filter_student_select"
-              >
-                <option value="">All students</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Method filter */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Method</Label>
-              <select
-                value={filterMethod}
-                onChange={(e) =>
-                  setFilterMethod(e.target.value as PaymentMethod | "")
-                }
-                className="h-9 px-3 rounded-xl border border-input bg-background/50 text-sm text-foreground appearance-none transition-fast focus:outline-none focus:ring-2 focus:ring-ring min-w-[140px]"
-                data-ocid="payments.filter_method_select"
-              >
-                <option value="">All methods</option>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-end gap-2 ml-auto">
-              {isFiltered && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="rounded-xl h-9 gap-1.5"
-                  data-ocid="payments.reset_filters_button"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Reset
-                </Button>
-              )}
-              <span className="text-sm text-muted-foreground py-1">
-                {filtered.length}{" "}
-                <span className="text-muted-foreground/70">
-                  {filtered.length === 1 ? "result" : "results"}
-                </span>
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Payment History Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          className="glass-card rounded-2xl shadow-soft overflow-hidden"
-          data-ocid="payments.table"
-        >
-          <div className="flex items-center justify-between p-5 border-b border-border/30">
-            <h2 className="font-display font-semibold text-foreground">
-              Payment History
-            </h2>
-            <Badge
-              variant="secondary"
-              className="rounded-full text-xs font-medium"
+            <Button
+              onClick={() => setRecordOpen(true)}
+              className="gradient-accent text-primary-foreground shadow-soft"
+              data-ocid="payments.add_button"
             >
+              <Plus className="w-4 h-4 mr-1.5" /> Record Payment
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search by student name…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-card/60"
+              data-ocid="payments.search_input"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger
+              className="w-full sm:w-48 bg-card/60"
+              data-ocid="payments.month_filter"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="All months" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {months.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {formatMonth(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={filterMethod}
+            onValueChange={(v) => setFilterMethod(v as PaymentMethod | "all")}
+          >
+            <SelectTrigger
+              className="w-full sm:w-44 bg-card/60"
+              data-ocid="payments.method_filter"
+            >
+              <SelectValue placeholder="All methods" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Methods</SelectItem>
+              <SelectItem value="cash">Cash</SelectItem>
+              <SelectItem value="online">Online</SelectItem>
+              <SelectItem value="cheque">Cheque</SelectItem>
+              <SelectItem value="card">Card</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="glass-card rounded-2xl overflow-hidden shadow-soft">
+          <div className="px-5 py-4 border-b border-border/30 flex items-center justify-between">
+            <h3 className="font-display font-semibold text-foreground">
+              Transactions
+            </h3>
+            <Badge variant="secondary" className="text-xs">
               {filtered.length} records
             </Badge>
           </div>
-
-          {isLoading ? (
-            <div className="p-5">
-              <LoadingSkeleton variant="table" rows={6} />
+          {paymentsLoading || studentsLoading ? (
+            <div className="p-4">
+              <LoadingSkeleton variant="table" rows={5} />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : paginated.length === 0 ? (
             <EmptyState
               icon={BookOpen}
-              title={isFiltered ? "No matching payments" : "No payments yet"}
-              description={
-                isFiltered
-                  ? "Try changing or resetting your filters to see more results."
-                  : "Record the first payment using the form above to get started."
-              }
-              actionLabel={isFiltered ? "Reset Filters" : undefined}
-              onAction={isFiltered ? resetFilters : undefined}
+              title="No payments found"
+              description="No payments match your filters."
               dataOcid="payments.empty_state"
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/20">
-                    {[
-                      "Student",
-                      "Month",
-                      "Amount",
-                      "Method",
-                      "Date",
-                      "Notes",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className={`px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider ${
-                          h === "Amount" ? "text-right" : ""
-                        }`}
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Student
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden sm:table-cell">
+                      Month
+                    </th>
+                    <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Amount
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden md:table-cell">
+                      Method
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden lg:table-cell">
+                      Date
+                    </th>
+                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <AnimatePresence initial={false}>
-                    {filtered.map((payment, idx) => {
-                      const student = studentMap.get(payment.student_id);
+                  <AnimatePresence mode="popLayout">
+                    {paginated.map((payment, idx) => {
+                      const m = METHOD_BADGE[payment.paymentMethod];
                       return (
                         <motion.tr
                           key={payment.id}
                           initial={{ opacity: 0, x: -8 }}
                           animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 16, height: 0 }}
-                          transition={{ duration: 0.25, delay: idx * 0.03 }}
-                          className="border-b border-border/10 hover:bg-primary/4 transition-fast group"
+                          exit={{ opacity: 0 }}
+                          transition={{ delay: idx * 0.04 }}
+                          className="border-b border-border/10 hover:bg-primary/5 transition-fast"
                           data-ocid={`payments.item.${idx + 1}`}
                         >
-                          {/* Student */}
-                          <td className="px-4 py-3">
+                          <td className="px-5 py-3">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full gradient-accent flex items-center justify-center shrink-0">
-                                <span className="text-xs font-semibold text-primary-foreground">
-                                  {student?.name[0] ?? "?"}
-                                </span>
+                              <div className="w-7 h-7 rounded-full gradient-accent flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
+                                {(
+                                  studentMap.get(payment.studentId)?.name ??
+                                  payment.studentName
+                                )
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()
+                                  .slice(0, 2)}
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">
-                                  {student?.name ?? "Unknown"}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {student?.class_ ?? "—"}
-                                </p>
-                              </div>
+                              <span className="font-medium text-foreground truncate max-w-[120px]">
+                                {studentMap.get(payment.studentId)?.name ??
+                                  payment.studentName}
+                              </span>
                             </div>
                           </td>
-
-                          {/* Month */}
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-foreground">
-                              {formatMonth(payment.month)}
-                            </span>
+                          <td className="px-5 py-3 text-muted-foreground text-xs hidden sm:table-cell">
+                            {formatMonth(payment.month)}
                           </td>
-
-                          {/* Amount */}
-                          <td className="px-4 py-3 text-right">
-                            <span className="text-sm font-semibold text-foreground font-mono">
-                              ₹
-                              {Number(payment.amount_paid).toLocaleString(
-                                "en-IN",
-                              )}
-                            </span>
+                          <td className="px-5 py-3 text-right font-display font-semibold text-foreground">
+                            ₹{payment.amountPaid.toLocaleString("en-IN")}
                           </td>
-
-                          {/* Method badge */}
-                          <td className="px-4 py-3">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs rounded-full border ${
-                                METHOD_BADGE[payment.payment_method].className
-                              }`}
+                          <td className="px-5 py-3 hidden md:table-cell">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${m.className}`}
                             >
-                              {METHOD_BADGE[payment.payment_method].label}
-                            </Badge>
-                          </td>
-
-                          {/* Date */}
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">
-                              {formatDate(payment.payment_date)}
+                              {m.label}
                             </span>
                           </td>
-
-                          {/* Notes */}
-                          <td className="px-4 py-3 max-w-[160px]">
-                            <span className="text-xs text-muted-foreground truncate block">
-                              {payment.notes ?? "—"}
-                            </span>
+                          <td className="px-5 py-3 text-muted-foreground text-xs hidden lg:table-cell">
+                            {new Date(payment.paymentDate).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
                           </td>
-
-                          {/* Actions */}
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-fast">
-                              <button
-                                type="button"
-                                onClick={() => setEditPayment(payment)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-fast"
-                                data-ocid={`payments.edit_button.${idx + 1}`}
-                                aria-label="Edit payment"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteId(payment.id)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-fast"
-                                data-ocid={`payments.delete_button.${idx + 1}`}
-                                aria-label="Delete payment"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                          <td className="px-5 py-3">
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(payment)}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-fast"
+                              aria-label="Delete payment"
+                              data-ocid={`payments.delete_button.${idx + 1}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </td>
                         </motion.tr>
                       );
@@ -944,32 +560,56 @@ export function AdminPaymentsPage() {
               </table>
             </div>
           )}
-        </motion.div>
+          {!paymentsLoading && filtered.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-border/30 bg-muted/10">
+              <p className="text-xs text-muted-foreground">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  data-ocid="payments.pagination_prev"
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  data-ocid="payments.pagination_next"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Edit Modal */}
-      <AnimatePresence>
-        {editPayment && (
-          <EditPaymentModal
-            payment={editPayment}
-            studentName={
-              studentMap.get(editPayment.student_id)?.name ?? "Unknown"
-            }
-            onClose={() => setEditPayment(null)}
-          />
-        )}
-      </AnimatePresence>
+      <RecordPaymentModal
+        open={recordOpen}
+        onClose={() => setRecordOpen(false)}
+      />
 
-      {/* Delete Confirm */}
       <ConfirmModal
-        open={!!deleteId}
-        title="Delete Payment"
-        description="This action cannot be undone. The payment record will be permanently removed."
+        open={!!deleteTarget}
+        title="Delete Payment?"
+        description={`This will permanently delete the payment of ₹${deleteTarget?.amountPaid?.toLocaleString("en-IN") ?? ""} for ${deleteTarget ? (studentMap.get(deleteTarget.studentId)?.name ?? deleteTarget.studentName) : ""}.`}
         confirmLabel="Delete"
         variant="danger"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        isLoading={deletePayment.isPending}
+        onConfirm={async () => {
+          if (deleteTarget) {
+            await deleteMutation.mutateAsync(deleteTarget.id);
+            toast.success("Payment deleted.");
+            setDeleteTarget(null);
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={deleteMutation.isPending}
       />
     </PageTransition>
   );

@@ -1,38 +1,59 @@
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/providers/AuthProvider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
+import type { Role } from "@/types/auth";
 import { useNavigate } from "@tanstack/react-router";
-import { GraduationCap, Shield, Users } from "lucide-react";
+import { GraduationCap, Info, Moon, Shield, Sun, Users } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 
-type SelectedRole = "admin" | "student";
-
 export function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState<SelectedRole>("admin");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { login, loginStatus } = useAuth();
-  const { role, isAuthenticated } = useAuthStore();
+  const [selectedRole, setSelectedRole] = useState<Role>("admin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
+  const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
-  if (isAuthenticated && role) {
+  // Redirect if already logged in
+  if (isAuthenticated && user) {
     navigate({
-      to: role === "admin" ? "/admin/dashboard" : "/student/dashboard",
+      to: user.role === "admin" ? "/admin/dashboard" : "/student/dashboard",
     });
     return null;
   }
 
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !password) return;
+    setIsSubmitting(true);
     try {
-      await login();
+      const result = login(email.trim(), password, selectedRole);
+      if (result) {
+        navigate({
+          to:
+            result.role === "admin" ? "/admin/dashboard" : "/student/dashboard",
+        });
+      }
     } finally {
-      setIsLoggingIn(false);
+      setIsSubmitting(false);
     }
-  };
+  }
 
-  const isLoading = isLoggingIn || loginStatus === "logging-in";
+  function fillDemo() {
+    if (selectedRole === "admin") {
+      setEmail("admin@akshayclasses.com");
+      setPassword("admin123");
+    } else {
+      setEmail("student@akshayclasses.com");
+      setPassword("student123");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -49,7 +70,19 @@ export function LoginPage() {
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-fast text-muted-foreground"
+            data-ocid="login.theme_toggle"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </header>
 
@@ -76,10 +109,11 @@ export function LoginPage() {
               Welcome Back
             </h1>
             <p className="text-sm text-muted-foreground text-center mb-8">
-              Sign in to your Akshay Classes account using Internet Identity
+              Sign in to manage Akshay Classes fee portal
             </p>
 
-            <div className="mb-8">
+            {/* Role Selector */}
+            <div className="mb-6">
               <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">
                 Select your role
               </p>
@@ -95,9 +129,7 @@ export function LoginPage() {
                   }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      selectedRole === "admin" ? "bg-primary/20" : "bg-muted"
-                    }`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedRole === "admin" ? "bg-primary/20" : "bg-muted"}`}
                   >
                     <Shield className="w-5 h-5" />
                   </div>
@@ -120,9 +152,7 @@ export function LoginPage() {
                   }`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      selectedRole === "student" ? "bg-primary/20" : "bg-muted"
-                    }`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedRole === "student" ? "bg-primary/20" : "bg-muted"}`}
                   >
                     <Users className="w-5 h-5" />
                   </div>
@@ -136,42 +166,84 @@ export function LoginPage() {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              className="w-full gradient-accent text-primary-foreground shadow-soft font-semibold"
-              onClick={handleLogin}
-              disabled={isLoading}
-              data-ocid="login.submit_button"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Connecting...</span>
-                </div>
-              ) : (
-                "Sign in with Internet Identity"
-              )}
-            </Button>
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="login-email" className="text-sm font-medium">
+                  Email
+                </Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-muted/30"
+                  data-ocid="login.email_input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password" className="text-sm font-medium">
+                  Password
+                </Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-muted/30"
+                  data-ocid="login.password_input"
+                />
+              </div>
 
-            <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-              <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                <span className="font-medium text-foreground">
-                  Internet Identity
-                </span>{" "}
-                provides secure, passwordless authentication built on the
-                Internet Computer. No passwords, no data breaches.
-              </p>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full gradient-accent text-primary-foreground shadow-soft font-semibold"
+                disabled={isSubmitting}
+                data-ocid="login.submit_button"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Signing in...</span>
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
+
+            {/* Demo credentials helper */}
+            <div className="mt-5 p-4 bg-muted/40 rounded-xl border border-border/30">
+              <div className="flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-foreground mb-1">
+                    Demo Credentials
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Admin:</strong> admin@akshayclasses.com / admin123
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Student:</strong> student@akshayclasses.com /
+                    student123
+                  </p>
+                  <button
+                    type="button"
+                    onClick={fillDemo}
+                    className="text-xs text-primary hover:text-primary/80 transition-fast mt-1.5 font-medium"
+                    data-ocid="login.fill_demo_button"
+                  >
+                    Fill demo credentials →
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
-
-          <div className="text-center mt-5">
-            <a
-              href="/"
-              className="text-sm text-muted-foreground hover:text-foreground transition-fast"
-            >
-              \u2190 Back to home
-            </a>
-          </div>
         </div>
       </div>
     </div>

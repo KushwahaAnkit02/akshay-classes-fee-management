@@ -2,19 +2,18 @@ import { PageTransition } from "@/components/shared/PageTransition";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { StudentLayout } from "@/layouts/StudentLayout";
-import { AuthCallbackPage } from "@/pages/AuthCallbackPage";
-import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminFeesPage } from "@/pages/admin/AdminFeesPage";
 import { AdminNotificationsPage } from "@/pages/admin/AdminNotificationsPage";
 import { AdminPaymentsPage } from "@/pages/admin/AdminPaymentsPage";
+import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
 import { AdminStudentsPage } from "@/pages/admin/AdminStudentsPage";
 import StudentDashboardPage from "@/pages/student/StudentDashboardPage";
 import StudentFeesPage from "@/pages/student/StudentFeesPage";
 import StudentPaymentsPage from "@/pages/student/StudentPaymentsPage";
 import StudentProfilePage from "@/pages/student/StudentProfilePage";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { useAuthStore } from "@/store/authStore";
 import {
   RouterProvider,
   createRootRoute,
@@ -22,50 +21,28 @@ import {
   createRouter,
   redirect,
 } from "@tanstack/react-router";
-import { Settings } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-
-function PlaceholderPage({
-  title,
-  icon: Icon,
-}: { title: string; icon: LucideIcon }) {
-  return (
-    <PageTransition>
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <div className="w-12 h-12 rounded-2xl gradient-accent flex items-center justify-center shadow-soft">
-          <Icon className="w-6 h-6 text-primary-foreground" />
-        </div>
-        <h2 className="font-display text-xl font-semibold text-foreground">
-          {title}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          This page is being built...
-        </p>
-      </div>
-    </PageTransition>
-  );
-}
 
 const rootRoute = createRootRoute();
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: LandingPage,
+  beforeLoad: () => {
+    const { isAuthenticated, user } = useAuthStore.getState();
+    if (isAuthenticated && user) {
+      throw redirect({
+        to: user.role === "admin" ? "/admin/dashboard" : "/student/dashboard",
+      });
+    }
+    throw redirect({ to: "/login" });
+  },
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: LoginPage,
-});
-
-const authCallbackRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/auth/callback",
-  component: AuthCallbackPage,
 });
 
 // Admin
@@ -122,7 +99,7 @@ const adminNotificationsRoute = createRoute({
 const adminSettingsRoute = createRoute({
   getParentRoute: () => adminLayoutRoute,
   path: "/admin/settings",
-  component: () => <PlaceholderPage title="Settings" icon={Settings} />,
+  component: AdminSettingsPage,
 });
 
 // Student
@@ -173,7 +150,6 @@ const studentProfileRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
-  authCallbackRoute,
   adminGuardRoute.addChildren([
     adminLayoutRoute.addChildren([
       adminRootRoute,
@@ -206,24 +182,17 @@ declare module "@tanstack/react-router" {
 
 export default function App() {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem
-      storageKey="akshay-theme"
-    >
-      <AuthProvider>
-        <RouterProvider router={router} />
-        <Toaster
-          position="top-right"
-          richColors
-          toastOptions={{
-            classNames: {
-              toast: "glass-card border-border/50",
-            },
-          }}
-        />
-      </AuthProvider>
-    </ThemeProvider>
+    <>
+      <RouterProvider router={router} />
+      <Toaster
+        position="top-right"
+        richColors
+        toastOptions={{
+          classNames: {
+            toast: "glass-card border-border/50",
+          },
+        }}
+      />
+    </>
   );
 }

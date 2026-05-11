@@ -4,25 +4,27 @@ import { PageTransition } from "@/components/shared/PageTransition";
 import { StatsCard } from "@/components/shared/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useMyAdmin } from "@/hooks/useAdmin";
-import { useNotificationsByAdmin } from "@/hooks/useNotifications";
-import { usePaymentsByAdmin } from "@/hooks/usePayments";
-import { useStudentsByAdmin } from "@/hooks/useStudents";
-import type { MonthlyPayment, PaymentMethod, Student } from "@/types";
+import { useAdminDashboard } from "@/hooks/useDashboard";
+import { useNotifications } from "@/hooks/useNotifications";
+import type { Payment, PaymentMethod } from "@/types/payment";
+import type { Student } from "@/types/student";
+import { formatCurrency } from "@/utils/formatters";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   Bell,
+  CheckCircle2,
   CreditCard,
   IndianRupee,
   TrendingUp,
   UserPlus,
   Users,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { animate, motion, useMotionValue, useTransform } from "motion/react";
+import { useEffect } from "react";
 import {
-  Bar,
-  BarChart,
+  Area,
+  AreaChart,
   Cell,
   Pie,
   PieChart,
@@ -32,13 +34,12 @@ import {
   YAxis,
 } from "recharts";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function formatCurrency(amount: number): string {
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+const PAYMENT_METHOD_COLORS: Record<PaymentMethod, string> = {
+  cash: "bg-emerald-500/20 text-emerald-600",
+  online: "bg-blue-500/20 text-blue-600",
+  cheque: "bg-amber-500/20 text-amber-600",
+  card: "bg-purple-500/20 text-purple-600",
+};
 
 function getInitials(name: string): string {
   return name
@@ -49,68 +50,53 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-function getMonthKey(ts: bigint): string {
-  const d = new Date(Number(ts) / 1_000_000);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+// biome-ignore lint/correctness/noUnusedVariables: kept for potential use
+function AnimatedCounter({
+  target,
+  prefix = "",
+  suffix = "",
+}: { target: number; prefix?: string; suffix?: string }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (v) => {
+    if (v >= 1_000) return `${prefix}${(v / 1000).toFixed(1)}K${suffix}`;
+    return `${prefix}${Math.round(v).toLocaleString("en-IN")}${suffix}`;
+  });
+
+  useEffect(() => {
+    const ctrl = animate(count, target, { duration: 1.2, ease: "easeOut" });
+    return ctrl.stop;
+  }, [count, target]);
+
+  return <motion.span>{rounded}</motion.span>;
 }
 
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function buildRevenueData(
-  payments: MonthlyPayment[],
-): { month: string; revenue: number }[] {
-  const now = new Date();
-  const result: { month: string; revenue: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const monthPayments = payments.filter(
-      (p) => getMonthKey(p.payment_date) === key,
-    );
-    const total = monthPayments.reduce(
-      (sum, p) => sum + Number(p.amount_paid),
-      0,
-    );
-    result.push({ month: MONTH_LABELS[d.getMonth()], revenue: total });
-  }
-  return result;
-}
-
-const PAYMENT_METHOD_COLORS: Record<PaymentMethod, string> = {
-  cash: "bg-emerald-500/20 text-emerald-600",
-  online: "bg-blue-500/20 text-blue-600",
-  cheque: "bg-amber-500/20 text-amber-600",
-  card: "bg-purple-500/20 text-purple-600",
-};
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function RevenueChart({ payments }: { payments: MonthlyPayment[] }) {
-  const data = buildRevenueData(payments);
+function RevenueChart({
+  data,
+}: { data: { month: string; revenue: number }[] }) {
   return (
     <div className="glass-card rounded-2xl p-5 shadow-soft">
       <h3 className="font-display font-semibold text-foreground mb-4">
         Monthly Revenue
       </h3>
       <ResponsiveContainer width="100%" height={200}>
-        <BarChart
+        <AreaChart
           data={data}
-          barSize={28}
           margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
         >
+          <defs>
+            <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="5%"
+                stopColor="oklch(0.72 0.18 192)"
+                stopOpacity={0.35}
+              />
+              <stop
+                offset="95%"
+                stopColor="oklch(0.72 0.18 192)"
+                stopOpacity={0.02}
+              />
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="month"
             tick={{ fontSize: 12, fill: "currentColor" }}
@@ -128,7 +114,6 @@ function RevenueChart({ payments }: { payments: MonthlyPayment[] }) {
             }
           />
           <Tooltip
-            cursor={{ fill: "oklch(var(--primary) / 0.08)" }}
             contentStyle={{
               background: "oklch(var(--card) / 0.95)",
               border: "1px solid oklch(var(--border) / 0.4)",
@@ -141,37 +126,26 @@ function RevenueChart({ payments }: { payments: MonthlyPayment[] }) {
               "Revenue",
             ]}
           />
-          <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
-            {data.map((_, idx) => (
-              <Cell
-                // biome-ignore lint/suspicious/noArrayIndexKey: static chart index
-                key={idx}
-                fill={`oklch(var(--primary) / ${idx === data.length - 1 ? "1" : "0.6"})`}
-              />
-            ))}
-          </Bar>
-        </BarChart>
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            stroke="oklch(0.72 0.18 192)"
+            strokeWidth={2.5}
+            fill="url(#revenueGrad)"
+            dot={{ fill: "oklch(0.72 0.18 192)", r: 3, strokeWidth: 2 }}
+            activeDot={{ r: 5, strokeWidth: 0 }}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
 function FeeDistributionChart({
-  collected,
-  pending,
-}: {
-  collected: number;
-  pending: number;
-}) {
-  const data = [
-    { name: "Collected", value: collected, color: "oklch(0.72 0.18 190)" },
-    {
-      name: "Pending",
-      value: Math.max(0, pending),
-      color: "oklch(0.75 0.18 55)",
-    },
-  ];
-  const total = collected + Math.max(0, pending);
+  data,
+}: { data: { name: string; value: number; color: string }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const collected = data[0]?.value ?? 0;
   const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
 
   return (
@@ -204,9 +178,7 @@ function FeeDistributionChart({
                 borderRadius: "12px",
                 fontSize: "12px",
               }}
-              formatter={(value: number) => [
-                `₹${value.toLocaleString("en-IN")}`,
-              ]}
+              formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`]}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -241,14 +213,13 @@ function RecentPaymentsTable({
   payments,
   students,
   isLoading,
-}: {
-  payments: MonthlyPayment[];
-  students: Student[];
-  isLoading: boolean;
-}) {
+}: { payments: Payment[]; students: Student[]; isLoading: boolean }) {
   const studentMap = new Map(students.map((s) => [s.id, s]));
   const recent = [...payments]
-    .sort((a, b) => Number(b.payment_date) - Number(a.payment_date))
+    .sort(
+      (a, b) =>
+        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+    )
     .slice(0, 8);
 
   return (
@@ -289,28 +260,18 @@ function RecentPaymentsTable({
                 <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden md:table-cell">
                   Date
                 </th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden lg:table-cell">
-                  Notes
-                </th>
               </tr>
             </thead>
             <tbody>
               {recent.map((payment, idx) => {
-                const student = studentMap.get(payment.student_id);
-                const dateStr = new Date(
-                  Number(payment.payment_date) / 1_000_000,
-                ).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                });
+                const student = studentMap.get(payment.studentId);
                 return (
                   <motion.tr
                     key={payment.id}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="border-b border-border/10 hover:bg-primary/5 transition-fast cursor-default"
+                    className="border-b border-border/10 hover:bg-primary/5 transition-fast"
                     data-ocid={`recent-payments.item.${idx + 1}`}
                   >
                     <td className="px-5 py-3">
@@ -319,27 +280,25 @@ function RecentPaymentsTable({
                           {student ? getInitials(student.name) : "?"}
                         </div>
                         <span className="font-medium text-foreground truncate max-w-[120px]">
-                          {student?.name ?? "Unknown"}
+                          {student?.name ?? payment.studentName}
                         </span>
                       </div>
                     </td>
                     <td className="px-5 py-3 text-right font-display font-semibold text-foreground">
-                      ₹{Number(payment.amount_paid).toLocaleString("en-IN")}
+                      ₹{payment.amountPaid.toLocaleString("en-IN")}
                     </td>
                     <td className="px-5 py-3 hidden sm:table-cell">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                          PAYMENT_METHOD_COLORS[payment.payment_method]
-                        }`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${PAYMENT_METHOD_COLORS[payment.paymentMethod]}`}
                       >
-                        {payment.payment_method}
+                        {payment.paymentMethod}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-muted-foreground text-xs hidden md:table-cell">
-                      {dateStr}
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[140px] truncate">
-                      {payment.notes ?? "—"}
+                      {new Date(payment.paymentDate).toLocaleDateString(
+                        "en-IN",
+                        { day: "2-digit", month: "short", year: "numeric" },
+                      )}
                     </td>
                   </motion.tr>
                 );
@@ -356,13 +315,12 @@ function RecentStudentsList({
   students,
   isLoading,
   onNavigate,
-}: {
-  students: Student[];
-  isLoading: boolean;
-  onNavigate: () => void;
-}) {
+}: { students: Student[]; isLoading: boolean; onNavigate: () => void }) {
   const recent = [...students]
-    .sort((a, b) => Number(b.created_at) - Number(a.created_at))
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, 5);
 
   return (
@@ -414,16 +372,12 @@ function RecentStudentsList({
               </div>
               <div className="text-right shrink-0">
                 <p className="font-display text-sm font-semibold text-foreground">
-                  ₹{Number(student.monthly_fee).toLocaleString("en-IN")}/mo
+                  ₹{student.monthlyFee.toLocaleString("en-IN")}/mo
                 </p>
                 <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-                    student.is_active
-                      ? "bg-emerald-500/15 text-emerald-600"
-                      : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${student.isActive ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"}`}
                 >
-                  {student.is_active ? "Active" : "Inactive"}
+                  {student.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
             </motion.div>
@@ -434,117 +388,46 @@ function RecentStudentsList({
   );
 }
 
-function QuickActions({
-  onAddStudent,
-  onRecordPayment,
-  onSendNotification,
-}: {
-  onAddStudent: () => void;
-  onRecordPayment: () => void;
-  onSendNotification: () => void;
-}) {
-  const actions = [
-    {
-      label: "Add Student",
-      icon: UserPlus,
-      onClick: onAddStudent,
-      ocid: "dashboard.add_student_button",
-      gradient: true,
-    },
-    {
-      label: "Record Payment",
-      icon: IndianRupee,
-      onClick: onRecordPayment,
-      ocid: "dashboard.record_payment_button",
-      gradient: false,
-    },
-    {
-      label: "Send Notification",
-      icon: Bell,
-      onClick: onSendNotification,
-      ocid: "dashboard.send_notification_button",
-      gradient: false,
-    },
-  ];
-
-  return (
-    <div className="glass-card rounded-2xl p-5 shadow-soft">
-      <h3 className="font-display font-semibold text-foreground mb-4">
-        Quick Actions
-      </h3>
-      <div className="flex flex-wrap gap-3">
-        {actions.map((action) => (
-          <Button
-            key={action.label}
-            type="button"
-            onClick={action.onClick}
-            variant={action.gradient ? "default" : "secondary"}
-            className={`gap-2 ${
-              action.gradient ? "gradient-accent text-primary-foreground" : ""
-            }`}
-            data-ocid={action.ocid}
-          >
-            <action.icon className="w-4 h-4" />
-            {action.label}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ───────────────────────────────────────────────────────────────
-
 export function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { data: admin, isLoading: adminLoading } = useMyAdmin();
-  const { data: students = [], isLoading: studentsLoading } =
-    useStudentsByAdmin();
-  const { data: payments = [], isLoading: paymentsLoading } =
-    usePaymentsByAdmin();
-  const { data: notifications = [] } = useNotificationsByAdmin();
+  const { data: notifications = [] } = useNotifications();
+  const {
+    totalStudents,
+    totalRevenue,
+    pendingFees,
+    paidThisMonth,
+    revenueChartData,
+    paymentStatusData,
+    students,
+    payments,
+    isLoading,
+  } = useAdminDashboard();
 
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-
-  // ── Computed stats ──────────────────────────────────────────────────────
-  const activeStudents = students.filter((s) => s.is_active);
-  const totalCollected = payments.reduce(
-    (sum, p) => sum + Number(p.amount_paid),
-    0,
-  );
-
-  const totalPotential = activeStudents.reduce(
-    (sum, s) => sum + Number(s.monthly_fee),
-    0,
-  );
-  const pendingFees = Math.max(0, totalPotential - totalCollected);
-
   const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthlyRevenue = payments
-    .filter((p) => getMonthKey(p.payment_date) === currentMonthKey)
-    .reduce((sum, p) => sum + Number(p.amount_paid), 0);
-
-  // New students this month
-  const newThisMonth = students.filter((s) => {
-    const d = new Date(Number(s.created_at) / 1_000_000);
-    return (
-      d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    );
-  }).length;
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const statsLoading = studentsLoading || adminLoading;
+  const MONTH_LABELS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   return (
     <PageTransition className="p-6 space-y-6 max-w-[1400px] mx-auto">
-      {/* Header greeting */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -554,16 +437,7 @@ export function AdminDashboardPage() {
       >
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            {adminLoading ? (
-              <span className="opacity-50">Loading...</span>
-            ) : (
-              <>
-                Welcome back,{" "}
-                <span className="gradient-accent bg-clip-text text-transparent">
-                  {admin?.institute_name ?? "Institute"}
-                </span>
-              </>
-            )}
+            Dashboard
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">{today}</p>
         </div>
@@ -580,8 +454,7 @@ export function AdminDashboardPage() {
         )}
       </motion.div>
 
-      {/* Stats cards */}
-      {statsLoading ? (
+      {isLoading ? (
         <LoadingSkeleton variant="stats" />
       ) : (
         <div
@@ -590,21 +463,16 @@ export function AdminDashboardPage() {
         >
           <StatsCard
             title="Total Students"
-            value={String(activeStudents.length)}
+            value={String(totalStudents)}
             subtitle={`${students.length} total enrolled`}
             icon={Users}
-            trend={
-              newThisMonth > 0
-                ? { value: newThisMonth, label: "new this month" }
-                : undefined
-            }
             accentColor="text-primary"
             delay={0}
             dataOcid="stats.total_students_card"
           />
           <StatsCard
             title="Total Collection"
-            value={formatCurrency(totalCollected)}
+            value={formatCurrency(totalRevenue)}
             subtitle={`${payments.length} payments recorded`}
             icon={IndianRupee}
             accentColor="text-primary"
@@ -621,10 +489,10 @@ export function AdminDashboardPage() {
             dataOcid="stats.pending_fees_card"
           />
           <StatsCard
-            title="Monthly Revenue"
-            value={formatCurrency(monthlyRevenue)}
+            title="Paid This Month"
+            value={formatCurrency(paidThisMonth)}
             subtitle={`${MONTH_LABELS[now.getMonth()]} ${now.getFullYear()}`}
-            icon={TrendingUp}
+            icon={CheckCircle2}
             accentColor="text-emerald-500"
             delay={0.24}
             dataOcid="stats.monthly_revenue_card"
@@ -632,7 +500,6 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Charts row */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -641,30 +508,49 @@ export function AdminDashboardPage() {
         data-ocid="admin-dashboard.charts_section"
       >
         <div className="lg:col-span-3">
-          <RevenueChart payments={payments} />
+          <RevenueChart data={revenueChartData} />
         </div>
         <div className="lg:col-span-2">
-          <FeeDistributionChart
-            collected={totalCollected}
-            pending={pendingFees}
-          />
+          <FeeDistributionChart data={paymentStatusData} />
         </div>
       </motion.div>
 
-      {/* Quick Actions */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.28 }}
+        className="glass-card rounded-2xl p-5 shadow-soft"
       >
-        <QuickActions
-          onAddStudent={() => navigate({ to: "/admin/students" })}
-          onRecordPayment={() => navigate({ to: "/admin/fees" })}
-          onSendNotification={() => navigate({ to: "/admin/notifications" })}
-        />
+        <h3 className="font-display font-semibold text-foreground mb-4">
+          Quick Actions
+        </h3>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() => navigate({ to: "/admin/students" })}
+            className="gap-2 gradient-accent text-primary-foreground"
+            data-ocid="dashboard.add_student_button"
+          >
+            <UserPlus className="w-4 h-4" /> Add Student
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => navigate({ to: "/admin/payments" })}
+            className="gap-2"
+            data-ocid="dashboard.record_payment_button"
+          >
+            <IndianRupee className="w-4 h-4" /> Record Payment
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => navigate({ to: "/admin/notifications" })}
+            className="gap-2"
+            data-ocid="dashboard.send_notification_button"
+          >
+            <Bell className="w-4 h-4" /> Send Notification
+          </Button>
+        </div>
       </motion.div>
 
-      {/* Recent Payments + Recent Students */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -676,13 +562,13 @@ export function AdminDashboardPage() {
           <RecentPaymentsTable
             payments={payments}
             students={students}
-            isLoading={paymentsLoading || studentsLoading}
+            isLoading={isLoading}
           />
         </div>
         <div className="xl:col-span-2">
           <RecentStudentsList
             students={students}
-            isLoading={studentsLoading}
+            isLoading={isLoading}
             onNavigate={() => navigate({ to: "/admin/students" })}
           />
         </div>

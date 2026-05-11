@@ -1,74 +1,58 @@
-import { createActor } from "@/backend";
-import * as svc from "@/services/backendService";
-import type { RecordPaymentForm, UpdatePaymentForm } from "@/types";
-import { useActor } from "@caffeineai/core-infrastructure";
+import * as paymentSvc from "@/services/paymentService";
+import type {
+  Payment,
+  RecordPaymentForm,
+  UpdatePaymentForm,
+} from "@/types/payment";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function usePaymentsByAdmin() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["payments", "admin"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return svc.getPaymentsByAdmin(actor);
-    },
-    enabled: !!actor && !isFetching,
+export function usePayments() {
+  return useQuery<Payment[]>({
+    queryKey: ["payments"],
+    queryFn: () => Promise.resolve(paymentSvc.getPayments()),
+    staleTime: 0,
   });
 }
 
-export function usePaymentsByStudent() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["payments", "student"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return svc.getPaymentsByStudent(actor);
-    },
-    enabled: !!actor && !isFetching,
+export function usePaymentsByStudent(studentId: string) {
+  return useQuery<Payment[]>({
+    queryKey: ["payments", "student", studentId],
+    queryFn: () => Promise.resolve(paymentSvc.getPaymentsByStudent(studentId)),
+    staleTime: 0,
+    enabled: !!studentId,
   });
 }
 
-export function useRecordPayment() {
-  const { actor } = useActor(createActor);
+export function useAddPayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (form: RecordPaymentForm) => {
-      if (!actor) throw new Error("No actor");
-      return svc.recordPayment(actor, form);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payments"] });
-    },
+    mutationFn: (form: RecordPaymentForm) =>
+      Promise.resolve(paymentSvc.addPayment(form)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["payments"] }),
   });
 }
 
 export function useUpdatePayment() {
-  const { actor } = useActor(createActor);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      form,
-    }: { id: string; form: UpdatePaymentForm }) => {
-      if (!actor) throw new Error("No actor");
-      return svc.updatePayment(actor, id, form);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payments"] });
-    },
+    mutationFn: ({ id, data }: { id: string; data: UpdatePaymentForm }) =>
+      Promise.resolve(paymentSvc.updatePayment(id, data)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["payments"] }),
   });
 }
 
 export function useDeletePayment() {
-  const { actor } = useActor(createActor);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      if (!actor) throw new Error("No actor");
-      return svc.deletePayment(actor, id);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payments"] });
-    },
+    mutationFn: (id: string) => Promise.resolve(paymentSvc.deletePayment(id)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["payments"] }),
+  });
+}
+
+export function usePaymentStats() {
+  return useQuery({
+    queryKey: ["payments", "stats"],
+    queryFn: () => Promise.resolve(paymentSvc.getPaymentStats()),
+    staleTime: 0,
   });
 }

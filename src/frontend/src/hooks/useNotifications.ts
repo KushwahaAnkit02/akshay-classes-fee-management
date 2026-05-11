@@ -1,73 +1,58 @@
-import { createActor } from "@/backend";
-import * as svc from "@/services/backendService";
-import type { CreateNotificationForm } from "@/types";
-import { useActor } from "@caffeineai/core-infrastructure";
+import * as notifSvc from "@/services/notificationService";
+import type {
+  CreateNotificationForm,
+  Notification,
+} from "@/types/notification";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function useNotificationsByAdmin() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["notifications", "admin"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return svc.getNotificationsByAdmin(actor);
-    },
-    enabled: !!actor && !isFetching,
-    refetchInterval: 30_000,
+export function useNotifications() {
+  return useQuery<Notification[]>({
+    queryKey: ["notifications"],
+    queryFn: () => Promise.resolve(notifSvc.getNotifications()),
+    staleTime: 0,
   });
 }
 
-export function useNotificationsByStudent() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["notifications", "student"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return svc.getNotificationsByStudent(actor);
-    },
-    enabled: !!actor && !isFetching,
-    refetchInterval: 30_000,
+export function useStudentNotifications(studentId: string) {
+  return useQuery<Notification[]>({
+    queryKey: ["notifications", "student", studentId],
+    queryFn: () =>
+      Promise.resolve(notifSvc.getNotificationsForStudent(studentId)),
+    staleTime: 0,
+    enabled: !!studentId,
   });
 }
 
-export function useCreateNotification() {
-  const { actor } = useActor(createActor);
+export function useAddNotification() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (form: CreateNotificationForm) => {
-      if (!actor) throw new Error("No actor");
-      return svc.createNotification(actor, form);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-    },
+    mutationFn: (form: CreateNotificationForm) =>
+      Promise.resolve(notifSvc.addNotification(form)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
 
-export function useMarkNotificationRead() {
-  const { actor } = useActor(createActor);
+export function useMarkAsRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      if (!actor) throw new Error("No actor");
-      return svc.markNotificationRead(actor, id);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-    },
+    mutationFn: (id: string) => Promise.resolve(notifSvc.markAsRead(id)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
 
-export function useMarkAllNotificationsRead() {
-  const { actor } = useActor(createActor);
+export function useMarkAllAsRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error("No actor");
-      return svc.markAllNotificationsRead(actor);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-    },
+    mutationFn: () => Promise.resolve(notifSvc.markAllAsRead()),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+export function useDeleteNotification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      Promise.resolve(notifSvc.deleteNotification(id)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }

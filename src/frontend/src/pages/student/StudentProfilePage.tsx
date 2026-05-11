@@ -1,389 +1,378 @@
 import { PageTransition } from "@/components/shared/PageTransition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { useMyProfile, useUpdateProfile } from "@/hooks/useProfile";
-import { useMyStudentProfile } from "@/hooks/useStudents";
+import { useUpdateStudent } from "@/hooks/useStudents";
+import { useStudents } from "@/hooks/useStudents";
+import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BookOpen,
-  Calendar,
-  CheckCircle2,
-  CreditCard,
-  Edit2,
+  CalendarDays,
   GraduationCap,
-  Mail,
+  IndianRupee,
+  LogOut,
   Moon,
-  Phone,
   Save,
   Sun,
   User,
-  X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
-function formatDate(ts: bigint) {
-  return new Date(Number(ts) / 1_000_000).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+const profileSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(64, "Name too long"),
+  phone: z
+    .string()
+    .regex(/^[0-9+\-\s]{0,15}$/, "Invalid phone number")
+    .optional()
+    .or(z.literal("")),
+});
 
-function formatAmount(val: bigint) {
-  return `₹${Number(val).toLocaleString("en-IN")}`;
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-}
+type ProfileForm = z.infer<typeof profileSchema>;
 
 export default function StudentProfilePage() {
-  const { profile, setProfile } = useAuthStore();
-  const { data: freshProfile, isLoading: profileLoading } = useMyProfile();
-  const { data: student, isLoading: studentLoading } = useMyStudentProfile();
-  const updateProfile = useUpdateProfile();
+  const { user, setUser, logout } = useAuthStore();
+  const { data: allStudents = [] } = useStudents();
   const { theme, setTheme } = useTheme();
+  const updateStudent = useUpdateStudent();
+  const studentRecord = allStudents.find((s) => s.id === user?.id);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: { name: user?.name ?? "", phone: "" },
+  });
 
-  const activeProfile = freshProfile ?? profile;
-  const isLoading = profileLoading || studentLoading;
-
+  // Sync defaults when user data loads
   useEffect(() => {
-    if (activeProfile) {
-      setName(activeProfile.name);
-      setPhone(activeProfile.phone ?? "");
-    }
-  }, [activeProfile]);
+    if (user) reset({ name: user.name, phone: "" });
+  }, [user, reset]);
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast.error("Name cannot be empty");
-      return;
-    }
-    try {
-      await updateProfile.mutateAsync({
-        name: name.trim(),
-        phone: phone.trim() || undefined,
-      });
-      if (profile) {
-        setProfile({
-          ...profile,
-          name: name.trim(),
-          phone: phone.trim() || undefined,
-        });
-      }
-      toast.success("Profile updated successfully!");
-      setEditOpen(false);
-    } catch {
-      toast.error("Failed to update profile. Please try again.");
-    }
-  };
+  async function onSubmit(data: ProfileForm) {
+    if (!user || !studentRecord) return;
+    await new Promise((r) => setTimeout(r, 300));
+    // Update auth store user name
+    setUser({ ...user, name: data.name });
+    // Update student record name
+    updateStudent.mutate({ id: studentRecord.id, data: { name: data.name } });
+    reset({ name: data.name, phone: data.phone ?? "" });
+    toast.success("Profile updated successfully");
+  }
 
-  const handleCancel = () => {
-    if (activeProfile) {
-      setName(activeProfile.name);
-      setPhone(activeProfile.phone ?? "");
-    }
-    setEditOpen(false);
-  };
+  const initials = (user?.name ?? "S")
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
   return (
     <PageTransition>
       <div
-        className="space-y-6 max-w-2xl mx-auto"
-        data-ocid="student.profile.page"
+        className="px-4 sm:px-6 py-6 space-y-6 max-w-2xl"
+        data-ocid="student-profile.page"
       >
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              My Profile
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Manage your account information
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditOpen(true)}
-            className="gap-2 rounded-xl border-border/50"
-            data-ocid="student.profile.edit_button"
-          >
-            <Edit2 className="w-4 h-4" />
-            Edit Profile
-          </Button>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            My Profile
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            View and manage your account information
+          </p>
         </div>
 
-        {/* Profile Card */}
+        {/* Avatar + Info card */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="glass-card rounded-2xl p-6 shadow-soft"
-          data-ocid="student.profile.card"
+          transition={{ duration: 0.35 }}
+          className="glass-card rounded-2xl shadow-soft overflow-hidden"
         >
-          {isLoading ? (
-            <div className="flex items-center gap-5">
-              <Skeleton className="w-20 h-20 rounded-2xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-40" />
-                <Skeleton className="h-4 w-56" />
-                <Skeleton className="h-4 w-32" />
+          {/* Gradient banner */}
+          <div className="h-20 gradient-accent opacity-70" />
+          <div className="px-6 pb-6">
+            <div className="-mt-10 flex items-end gap-4 mb-5">
+              <div className="w-20 h-20 rounded-2xl gradient-accent flex items-center justify-center text-2xl font-bold text-primary-foreground shadow-elevated border-2 border-background">
+                {initials}
               </div>
-            </div>
-          ) : activeProfile ? (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
-                className="w-20 h-20 rounded-2xl gradient-accent flex items-center justify-center text-2xl font-display font-bold text-primary-foreground shadow-soft shrink-0"
-                data-ocid="student.profile.avatar"
-              >
-                {getInitials(activeProfile.name)}
-              </motion.div>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-display text-xl font-bold text-foreground truncate">
-                  {activeProfile.name}
+              <div className="mb-1">
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  {user?.name ?? "Student"}
                 </h2>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Mail className="w-3.5 h-3.5" />
-                    {activeProfile.email}
-                  </span>
-                  {activeProfile.phone && (
-                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Phone className="w-3.5 h-3.5" />
-                      {activeProfile.phone}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <Badge className="bg-primary/15 text-primary text-xs px-2.5 py-0.5 capitalize rounded-lg">
-                    {activeProfile.role}
-                  </Badge>
-                  <Badge
-                    className={`text-xs px-2.5 py-0.5 rounded-lg ${
-                      activeProfile.is_active
-                        ? "bg-emerald-500/15 text-emerald-600"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {activeProfile.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Profile not found.</p>
-          )}
+
+            <div className="flex flex-wrap gap-2 mb-5">
+              <Badge className="bg-primary/15 text-primary border-primary/30 text-xs">
+                <User className="w-3 h-3 mr-1" />
+                Student
+              </Badge>
+              {studentRecord && (
+                <>
+                  <Badge className="bg-muted text-muted-foreground border-border text-xs">
+                    <BookOpen className="w-3 h-3 mr-1" />
+                    {studentRecord.class_}
+                  </Badge>
+                  <Badge className="bg-muted text-muted-foreground border-border text-xs">
+                    {studentRecord.course}
+                  </Badge>
+                </>
+              )}
+            </div>
+
+            {studentRecord && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    icon: IndianRupee,
+                    label: "Monthly Fee",
+                    value: `₹${studentRecord.monthlyFee.toLocaleString("en-IN")}`,
+                  },
+                  {
+                    icon: CalendarDays,
+                    label: "Joined Date",
+                    value: new Date(
+                      studentRecord.joinedDate,
+                    ).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    }),
+                  },
+                  {
+                    icon: GraduationCap,
+                    label: "Status",
+                    value: studentRecord.isActive ? "Active" : "Inactive",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/40"
+                  >
+                    <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                      <item.icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">
+                        {item.value}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </motion.div>
 
-        {/* Student Details Card */}
-        {student && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="glass-card rounded-2xl p-6 shadow-soft"
-            data-ocid="student.profile.student_details_card"
-          >
-            <div className="flex items-center gap-2 mb-5">
-              <GraduationCap className="w-4 h-4 text-primary" />
-              <h2 className="font-display font-semibold text-foreground">
-                Academic Details
-              </h2>
-              <Badge className="ml-auto text-[10px] px-2 bg-muted text-muted-foreground">
-                Read-only
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { label: "Course", value: student.course, icon: BookOpen },
-                { label: "Class", value: student.class_, icon: GraduationCap },
-                {
-                  label: "Monthly Fee",
-                  value: formatAmount(student.monthly_fee),
-                  icon: CreditCard,
-                },
-                {
-                  label: "Joined Date",
-                  value: formatDate(student.joined_date),
-                  icon: Calendar,
-                },
-                {
-                  label: "Fee Start Date",
-                  value: formatDate(student.fee_start_date),
-                  icon: Calendar,
-                },
-                {
-                  label: "Status",
-                  value: student.is_active ? "Active" : "Inactive",
-                  icon: CheckCircle2,
-                },
-              ].map(({ label, value, icon: Icon }, i) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 + i * 0.06 }}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/20"
-                >
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Icon className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {value}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Theme & Preferences */}
+        {/* Edit Profile Form */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
           className="glass-card rounded-2xl p-6 shadow-soft"
-          data-ocid="student.profile.preferences_card"
         >
-          <h2 className="font-display font-semibold text-foreground mb-5">
-            Preferences
-          </h2>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                {theme === "dark" ? (
-                  <Moon className="w-4 h-4 text-primary" />
-                ) : (
-                  <Sun className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2 mb-5">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <User className="w-4 h-4" />
+            </div>
+            <h2 className="font-display font-semibold text-foreground">
+              Edit Profile
+            </h2>
+          </div>
+          <Separator className="mb-5" />
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-4"
+            noValidate
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-name">Full Name</Label>
+                <Input
+                  id="profile-name"
+                  placeholder="Your full name"
+                  {...register("name")}
+                  className={errors.name ? "border-destructive" : ""}
+                  data-ocid="student-profile.name_input"
+                />
+                {errors.name && (
+                  <p
+                    className="text-xs text-destructive"
+                    data-ocid="student-profile.name_field_error"
+                  >
+                    {errors.name.message}
+                  </p>
                 )}
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Dark Mode</p>
-                <p className="text-xs text-muted-foreground">
-                  Switch between light and dark theme
-                </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-phone">Phone Number</Label>
+                <Input
+                  id="profile-phone"
+                  placeholder="+91 99999 99999"
+                  {...register("phone")}
+                  className={errors.phone ? "border-destructive" : ""}
+                  data-ocid="student-profile.phone_input"
+                />
+                {errors.phone && (
+                  <p
+                    className="text-xs text-destructive"
+                    data-ocid="student-profile.phone_field_error"
+                  >
+                    {errors.phone.message}
+                  </p>
+                )}
               </div>
             </div>
-            <Switch
-              checked={theme === "dark"}
-              onCheckedChange={(checked) =>
-                setTheme(checked ? "dark" : "light")
-              }
-              data-ocid="student.profile.theme_toggle"
-            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input
+                  value={user?.email ?? ""}
+                  disabled
+                  className="bg-muted/50 text-muted-foreground"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Email cannot be changed
+                </p>
+              </div>
+              {studentRecord && (
+                <div className="space-y-1.5">
+                  <Label>Course</Label>
+                  <Input
+                    value={studentRecord.course}
+                    disabled
+                    className="bg-muted/50 text-muted-foreground"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Assigned by admin
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                type="submit"
+                disabled={!isDirty || isSubmitting}
+                className="gradient-accent text-primary-foreground gap-2"
+                data-ocid="student-profile.save_button"
+              >
+                {isSubmitting ? (
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </motion.div>
+
+        {/* Preferences */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.15 }}
+          className="glass-card rounded-2xl p-6 shadow-soft space-y-4"
+        >
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+            <h2 className="font-display font-semibold text-foreground">
+              Preferences
+            </h2>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Appearance</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Switch between dark and light mode
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Sun className="w-4 h-4 text-muted-foreground" />
+              <button
+                type="button"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                aria-label="Toggle theme"
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  theme === "dark"
+                    ? "bg-primary"
+                    : "bg-muted border border-border"
+                }`}
+                data-ocid="student-profile.theme_toggle"
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-background shadow-sm transition-transform duration-200 ${
+                    theme === "dark" ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <Moon className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Account / Logout */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+          className="glass-card rounded-2xl p-6 shadow-soft"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive">
+              <LogOut className="w-4 h-4" />
+            </div>
+            <h2 className="font-display font-semibold text-foreground">
+              Account
+            </h2>
+          </div>
+          <Separator className="mb-4" />
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Sign out</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                You'll need to log in again to access the portal
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                logout();
+                window.location.href = "/login";
+              }}
+              className="gap-2 shrink-0"
+              data-ocid="student-profile.logout_button"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
         </motion.div>
       </div>
-
-      {/* Edit Profile Modal */}
-      <AnimatePresence>
-        {editOpen && (
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent
-              className="glass-card border-border/50 rounded-2xl shadow-elevated max-w-md"
-              data-ocid="student.profile.edit_dialog"
-            >
-              <DialogHeader>
-                <DialogTitle className="font-display font-bold text-lg text-foreground flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  Edit Profile
-                </DialogTitle>
-              </DialogHeader>
-              <Separator className="opacity-30" />
-              <div className="space-y-4 py-2">
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="edit-name"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Full Name
-                  </Label>
-                  <Input
-                    id="edit-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="h-10 rounded-xl border-border/50 bg-card/50"
-                    data-ocid="student.profile.name_input"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="edit-phone"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="edit-phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter your phone number"
-                    className="h-10 rounded-xl border-border/50 bg-card/50"
-                    data-ocid="student.profile.phone_input"
-                  />
-                </div>
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/20">
-                  <p className="text-xs text-muted-foreground">
-                    <Mail className="w-3.5 h-3.5 inline mr-1" />
-                    Email address cannot be changed from here.
-                  </p>
-                </div>
-              </div>
-              <DialogFooter className="gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="gap-2 rounded-xl border-border/50"
-                  data-ocid="student.profile.edit_cancel_button"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={updateProfile.isPending}
-                  className="gap-2 rounded-xl gradient-accent text-primary-foreground"
-                  data-ocid="student.profile.edit_save_button"
-                >
-                  <Save className="w-4 h-4" />
-                  {updateProfile.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-      </AnimatePresence>
     </PageTransition>
   );
 }

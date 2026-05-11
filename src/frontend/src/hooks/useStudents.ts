@@ -1,60 +1,41 @@
-import { createActor } from "@/backend";
-import * as svc from "@/services/backendService";
-import type { CreateStudentForm, UpdateStudentForm } from "@/types";
-import { useActor } from "@caffeineai/core-infrastructure";
+import * as studentSvc from "@/services/studentService";
+import type {
+  CreateStudentForm,
+  Student,
+  UpdateStudentForm,
+} from "@/types/student";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function useStudentsByAdmin() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["students", "admin"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return svc.getStudentsByAdmin(actor);
-    },
-    enabled: !!actor && !isFetching,
+export function useStudents() {
+  return useQuery<Student[]>({
+    queryKey: ["students"],
+    queryFn: () => Promise.resolve(studentSvc.getStudents()),
+    staleTime: 0,
   });
 }
 
-export function useMyStudentProfile() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["students", "me"],
-    queryFn: async () => {
-      if (!actor) return null;
-      return svc.getStudentByProfile(actor);
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useCreateStudent() {
-  const { actor } = useActor(createActor);
+export function useAddStudent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (form: CreateStudentForm) => {
-      if (!actor) throw new Error("No actor");
-      return svc.createStudent(actor, form);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["students"] });
-    },
+    mutationFn: (form: CreateStudentForm) =>
+      Promise.resolve(studentSvc.addStudent(form)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
   });
 }
 
 export function useUpdateStudent() {
-  const { actor } = useActor(createActor);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      form,
-    }: { id: string; form: UpdateStudentForm }) => {
-      if (!actor) throw new Error("No actor");
-      return svc.updateStudent(actor, id, form);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["students"] });
-    },
+    mutationFn: ({ id, data }: { id: string; data: UpdateStudentForm }) =>
+      Promise.resolve(studentSvc.updateStudent(id, data)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
+  });
+}
+
+export function useDeleteStudent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => Promise.resolve(studentSvc.deleteStudent(id)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
   });
 }

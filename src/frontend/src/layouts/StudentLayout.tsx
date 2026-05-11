@@ -1,10 +1,13 @@
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useNotificationsByStudent } from "@/hooks/useNotifications";
-import { useAuth } from "@/providers/AuthProvider";
+import {
+  useMarkAllAsRead,
+  useMarkAsRead,
+  useStudentNotifications,
+} from "@/hooks/useNotifications";
+import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   BookOpen,
@@ -13,11 +16,13 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
+  Sun,
   UserCircle,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const NAV_ITEMS = [
   { to: "/student/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -26,13 +31,51 @@ const NAV_ITEMS = [
   { to: "/student/profile", icon: UserCircle, label: "Profile" },
 ];
 
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+      className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-fast text-muted-foreground hover:text-foreground"
+      data-ocid="student.theme_toggle"
+    >
+      {theme === "dark" ? (
+        <Sun className="w-4 h-4" />
+      ) : (
+        <Moon className="w-4 h-4" />
+      )}
+    </button>
+  );
+}
+
 export function StudentLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
-  const { profile } = useAuthStore();
-  const { logout } = useAuth();
-  const { data: notifications = [] } = useNotificationsByStudent();
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { data: notifications = [] } = useStudentNotifications(user?.id ?? "");
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const { mutate: markAsRead } = useMarkAsRead();
+  const { mutate: markAllAsRead } = useMarkAllAsRead();
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    if (notifOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
+
+  function handleLogout() {
+    logout();
+    navigate({ to: "/login" });
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -89,7 +132,7 @@ export function StudentLayout() {
         <div className="p-3 border-t border-border/30">
           <button
             type="button"
-            onClick={logout}
+            onClick={handleLogout}
             data-ocid="student.logout_button"
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-fast"
           >
@@ -161,7 +204,7 @@ export function StudentLayout() {
               <div className="p-3 border-t border-border/30">
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-fast"
                 >
                   <LogOut className="w-4 h-4" />
@@ -191,24 +234,97 @@ export function StudentLayout() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link
-              to="/student/dashboard"
-              data-ocid="student.header.notifications_button"
-              className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-fast"
-            >
-              <Bell className="w-4 h-4 text-muted-foreground" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full text-[9px] text-primary-foreground flex items-center justify-center font-bold">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
+            <div ref={notifRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setNotifOpen((v) => !v)}
+                aria-label="Notifications"
+                data-ocid="student.header.notifications_button"
+                className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-fast"
+              >
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full text-[9px] text-primary-foreground flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-80 bg-card border border-border/50 rounded-2xl shadow-soft z-50 overflow-hidden"
+                    data-ocid="student.notifications.popover"
+                  >
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+                      <p className="font-display font-semibold text-sm text-foreground">
+                        Notifications
+                      </p>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => markAllAsRead()}
+                          className="text-xs text-primary hover:text-primary/80 transition-fast"
+                          data-ocid="student.notifications.mark_all_read"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div
+                          className="flex flex-col items-center justify-center py-10 text-center px-4"
+                          data-ocid="student.notifications.empty_state"
+                        >
+                          <Bell className="w-8 h-8 text-muted-foreground/40 mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            No notifications yet
+                          </p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 8).map((n) => (
+                          <button
+                            key={n.id}
+                            type="button"
+                            onClick={() => {
+                              if (!n.isRead) markAsRead(n.id);
+                            }}
+                            className={`w-full text-left px-4 py-3 border-b border-border/20 last:border-0 hover:bg-muted/50 transition-fast ${
+                              !n.isRead ? "bg-primary/5" : ""
+                            }`}
+                            data-ocid="student.notifications.item"
+                          >
+                            <div className="flex items-start gap-2">
+                              {!n.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                              )}
+                              <div className={!n.isRead ? "" : "pl-4"}>
+                                <p className="text-xs font-semibold text-foreground leading-tight">
+                                  {n.title}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {n.message}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <div className="flex items-center gap-2 pl-2 border-l border-border/50">
               <div className="w-8 h-8 rounded-full gradient-accent flex items-center justify-center text-xs font-bold text-primary-foreground">
-                {profile?.name?.[0]?.toUpperCase() ?? "S"}
+                {user?.name?.[0]?.toUpperCase() ?? "S"}
               </div>
               <span className="hidden sm:block text-sm font-medium text-foreground truncate max-w-[120px]">
-                {profile?.name ?? "Student"}
+                {user?.name ?? "Student"}
               </span>
             </div>
           </div>

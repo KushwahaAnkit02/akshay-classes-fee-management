@@ -1,379 +1,370 @@
+import { EmptyState } from "@/components/shared/EmptyState";
+import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { usePaymentsByStudent } from "@/hooks/usePayments";
-import { useMyStudentProfile } from "@/hooks/useStudents";
-import type { MonthlyPayment } from "@/types";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { usePaymentsByStudent } from "@/hooks/usePayments";
+import { useStudents } from "@/hooks/useStudents";
+import { useAuthStore } from "@/store/authStore";
+import {
+  formatMonth,
+  getCurrentMonthKey,
+  getMonthKey,
+} from "@/utils/formatters";
+import {
+  AlertCircle,
   BookOpen,
-  Calendar,
+  CalendarDays,
   CheckCircle2,
-  ChevronRight,
-  CreditCard,
-  GraduationCap,
-  XCircle,
+  Clock,
+  IndianRupee,
+  TrendingUp,
 } from "lucide-react";
 import { motion } from "motion/react";
-import type { ReactElement } from "react";
+import { useMemo, useState } from "react";
 
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-function formatAmount(val: bigint) {
-  return `₹${Number(val).toLocaleString("en-IN")}`;
-}
-
-function formatDate(ts: bigint) {
-  return new Date(Number(ts) / 1_000_000).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function getCurrentYYYYMM() {
+function buildMonthsSince(
+  startDate: string,
+  monthlyFee: number,
+  payments: Array<{ month: string; amountPaid: number }>,
+) {
+  const start = new Date(startDate);
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
+  const months: Array<{
+    key: string;
+    paid: number;
+    status: "Paid" | "Partial" | "Pending" | "Current";
+    year: number;
+  }> = [];
 
-function getMonthsFromStart(feeStartTs: bigint): string[] {
-  const start = new Date(Number(feeStartTs) / 1_000_000);
-  const now = new Date();
-  const months: string[] = [];
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth(), 1);
-  while (cur <= end) {
-    months.push(
-      `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`,
-    );
+  while (cur <= now) {
+    const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
+    const monthPaid = payments
+      .filter((p) => p.month === key)
+      .reduce((sum, p) => sum + p.amountPaid, 0);
+    const isCurrentMonth = key === getCurrentMonthKey();
+    let status: "Paid" | "Partial" | "Pending" | "Current";
+    if (monthPaid >= monthlyFee) {
+      status = "Paid";
+    } else if (monthPaid > 0) {
+      status = "Partial";
+    } else if (isCurrentMonth) {
+      status = "Current";
+    } else {
+      status = "Pending";
+    }
+    months.push({ key, paid: monthPaid, status, year: cur.getFullYear() });
     cur.setMonth(cur.getMonth() + 1);
   }
-  return months;
+  return months.reverse();
 }
 
-function monthLabel(month: string) {
-  const [y, m] = month.split("-");
-  return `${MONTH_NAMES[Number.parseInt(m) - 1]} ${y}`;
-}
-
-type MonthStatus = "paid" | "partial" | "unpaid";
-
-function getMonthStatus(
-  month: string,
-  monthlyFee: number,
-  payments: MonthlyPayment[],
-): { status: MonthStatus; paid: number; due: number } {
-  const p = payments.find((pay) => pay.month === month);
-  const paid = p ? Number(p.amount_paid) : 0;
-  const due = Math.max(0, monthlyFee - paid);
-  const status: MonthStatus =
-    paid === 0 ? "unpaid" : due === 0 ? "paid" : "partial";
-  return { status, paid, due };
-}
-
-const STATUS_STYLES: Record<
-  MonthStatus,
-  { badge: string; icon: ReactElement }
-> = {
-  paid: {
-    badge: "bg-emerald-500/15 text-emerald-600",
-    icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+const STATUS_CONFIG = {
+  Paid: {
+    icon: CheckCircle2,
+    iconColor: "text-emerald-500",
+    bg: "bg-emerald-500/15",
+    badge: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+    label: "Paid",
   },
-  partial: {
-    badge: "bg-amber-500/15 text-amber-600",
-    icon: <ChevronRight className="w-4 h-4 text-amber-500" />,
+  Partial: {
+    icon: Clock,
+    iconColor: "text-amber-500",
+    bg: "bg-amber-500/15",
+    badge: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+    label: "Partial",
   },
-  unpaid: {
-    badge: "bg-destructive/15 text-destructive",
-    icon: <XCircle className="w-4 h-4 text-destructive" />,
+  Current: {
+    icon: AlertCircle,
+    iconColor: "text-blue-500",
+    bg: "bg-blue-500/15",
+    badge: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+    label: "Due",
+  },
+  Pending: {
+    icon: AlertCircle,
+    iconColor: "text-destructive",
+    bg: "bg-destructive/10",
+    badge: "bg-destructive/15 text-destructive border-destructive/30",
+    label: "Overdue",
   },
 };
 
 export default function StudentFeesPage() {
-  const { data: student, isLoading: studentLoading } = useMyStudentProfile();
-  const { data: payments = [], isLoading: paymentsLoading } =
-    usePaymentsByStudent();
+  const { user } = useAuthStore();
+  const studentId = user?.id ?? "";
+  const { data: allStudents = [] } = useStudents();
+  const { data: payments = [], isLoading } = usePaymentsByStudent(studentId);
+  const studentRecord = allStudents.find((s) => s.id === studentId);
 
-  const isLoading = studentLoading || paymentsLoading;
-  const monthlyFee = student ? Number(student.monthly_fee) : 0;
-  const allMonths = student ? getMonthsFromStart(student.fee_start_date) : [];
-  const currentMonth = getCurrentYYYYMM();
+  const currentMonth = getCurrentMonthKey();
+  const monthlyFee = studentRecord?.monthlyFee ?? 0;
+  const paidThisMonth = payments
+    .filter((p) => getMonthKey(p.paymentDate) === currentMonth)
+    .reduce((sum, p) => sum + p.amountPaid, 0);
+  const pendingThisMonth = Math.max(0, monthlyFee - paidThisMonth);
+  const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
 
-  const pendingMonths = allMonths.filter((m) => {
-    const { status } = getMonthStatus(m, monthlyFee, payments);
-    return status !== "paid";
-  });
+  const allMonths = useMemo(() => {
+    if (!studentRecord) return [];
+    return buildMonthsSince(studentRecord.feeStartDate, monthlyFee, payments);
+  }, [studentRecord, monthlyFee, payments]);
 
-  // Group all months by year for history
-  const byYear: Record<string, string[]> = {};
-  for (const m of allMonths) {
-    const [y] = m.split("-");
-    if (!byYear[y]) byYear[y] = [];
-    byYear[y].push(m);
-  }
-  const years = Object.keys(byYear).sort((a, b) => Number(b) - Number(a));
+  const years = useMemo(() => {
+    const s = new Set(allMonths.map((m) => m.year));
+    return Array.from(s).sort().reverse();
+  }, [allMonths]);
+
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+
+  const filteredMonths = useMemo(() => {
+    if (selectedYear === "all") return allMonths;
+    return allMonths.filter((m) => m.year === Number(selectedYear));
+  }, [allMonths, selectedYear]);
+
+  const overdueCount = filteredMonths.filter(
+    (m) => m.status === "Pending",
+  ).length;
+  const paidCount = filteredMonths.filter((m) => m.status === "Paid").length;
+
+  const summaryCards = [
+    {
+      title: "Monthly Fee",
+      value: `₹${monthlyFee.toLocaleString("en-IN")}`,
+      sub: studentRecord?.course ?? "—",
+      icon: IndianRupee,
+      accent: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      title: "Total Paid",
+      value: `₹${totalPaid.toLocaleString("en-IN")}`,
+      sub: `${paidCount} months cleared`,
+      icon: TrendingUp,
+      accent: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+    },
+    {
+      title: "This Month Pending",
+      value: `₹${pendingThisMonth.toLocaleString("en-IN")}`,
+      sub: pendingThisMonth === 0 ? "All clear" : "Outstanding",
+      icon: pendingThisMonth === 0 ? CheckCircle2 : Clock,
+      accent: pendingThisMonth === 0 ? "text-emerald-500" : "text-amber-500",
+      bg: pendingThisMonth === 0 ? "bg-emerald-500/10" : "bg-amber-500/10",
+    },
+  ];
 
   return (
     <PageTransition>
       <div
-        className="space-y-6 max-w-4xl mx-auto"
-        data-ocid="student.fees.page"
+        className="px-4 sm:px-6 py-6 space-y-6"
+        data-ocid="student-fees.page"
       >
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            My Fees
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Your fee details and payment history
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              My Fees
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Track your fee payment status month by month
+            </p>
+          </div>
+          {overdueCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="glass-card rounded-xl px-4 py-3 border border-destructive/30 bg-destructive/5"
+              data-ocid="student-fees.overdue_alert"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-destructive">
+                    {overdueCount} overdue month{overdueCount > 1 ? "s" : ""}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Please contact admin
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        {/* Fee Details Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="glass-card rounded-2xl p-6 shadow-soft"
-          data-ocid="student.fees.details_card"
-        >
-          <div className="flex items-center gap-2 mb-5">
-            <CreditCard className="w-4 h-4 text-primary" />
-            <h2 className="font-display font-semibold text-foreground">
-              Fee Details
-            </h2>
-          </div>
-          {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }, (_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
-                <Skeleton key={i} className="h-16 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : student ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {[
-                {
-                  label: "Monthly Fee",
-                  value: formatAmount(student.monthly_fee),
-                  icon: CreditCard,
-                },
-                { label: "Course", value: student.course, icon: BookOpen },
-                { label: "Class", value: student.class_, icon: GraduationCap },
-                {
-                  label: "Fee Start Date",
-                  value: formatDate(student.fee_start_date),
-                  icon: Calendar,
-                },
-                {
-                  label: "Joined Date",
-                  value: formatDate(student.joined_date),
-                  icon: Calendar,
-                },
-                {
-                  label: "Account Status",
-                  value: student.is_active ? "Active" : "Inactive",
-                  icon: CheckCircle2,
-                },
-              ].map(({ label, value, icon: Icon }, i) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="p-4 rounded-xl bg-muted/30 border border-border/20"
-                >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {label}
-                    </span>
-                  </div>
-                  <p className="font-display font-semibold text-sm text-foreground truncate">
-                    {value}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Student information unavailable.
-            </p>
-          )}
-        </motion.div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {summaryCards.map((card, idx) => (
+            <motion.div
+              key={card.title}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: idx * 0.08 }}
+              whileHover={{ y: -2, transition: { duration: 0.2 } }}
+              className="glass-card rounded-2xl p-5 shadow-soft cursor-default"
+              data-ocid={`student-fees.summary_card.${idx + 1}`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm text-muted-foreground">{card.title}</p>
+                <div className={`p-2 rounded-xl ${card.bg} ${card.accent}`}>
+                  <card.icon className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="font-display text-2xl font-bold text-foreground tracking-tight">
+                {card.value}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
+            </motion.div>
+          ))}
+        </div>
 
-        {/* Upcoming Dues */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="glass-card rounded-2xl p-6 shadow-soft"
-          data-ocid="student.fees.upcoming_dues"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-destructive" />
-              <h2 className="font-display font-semibold text-foreground">
-                Upcoming / Pending Dues
-              </h2>
+        {/* Enrollment Details */}
+        {studentRecord && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="glass-card rounded-2xl p-5 shadow-soft"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              <h3 className="font-display font-semibold text-foreground">
+                Enrollment Details
+              </h3>
             </div>
-            {pendingMonths.length > 0 && (
-              <Badge className="bg-destructive/15 text-destructive text-xs">
-                {pendingMonths.length} pending
-              </Badge>
-            )}
-          </div>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              {[
+                { label: "Class", value: studentRecord.class_ },
+                { label: "Course", value: studentRecord.course },
+                {
+                  label: "Joined",
+                  value: new Date(studentRecord.joinedDate).toLocaleDateString(
+                    "en-IN",
+                    {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    },
+                  ),
+                },
+                {
+                  label: "Status",
+                  value: studentRecord.isActive ? "Active" : "Inactive",
+                  isStatus: true,
+                },
+              ].map((item) => (
+                <div key={item.label}>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {item.label}
+                  </p>
+                  {item.isStatus ? (
+                    <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-xs">
+                      {item.value}
+                    </Badge>
+                  ) : (
+                    <p className="font-medium text-foreground">{item.value}</p>
+                  )}
+                </div>
               ))}
             </div>
-          ) : pendingMonths.length === 0 ? (
-            <div className="flex flex-col items-center py-8 text-center">
-              <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-3" />
-              <p className="font-display font-semibold text-foreground">
-                All caught up!
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                No pending dues at this time.
-              </p>
+          </motion.div>
+        )}
+
+        {/* Monthly Status Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+          className="glass-card rounded-2xl shadow-soft overflow-hidden"
+        >
+          <div className="px-5 py-4 border-b border-border/30 flex flex-col sm:flex-row sm:items-center gap-3">
+            <h3 className="font-display font-semibold text-foreground flex-1">
+              Monthly Fee Status
+            </h3>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger
+                className="w-full sm:w-36 bg-card/60"
+                data-ocid="student-fees.year_filter"
+              >
+                <SelectValue placeholder="All years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isLoading ? (
+            <div className="p-4">
+              <LoadingSkeleton variant="list" rows={6} />
             </div>
+          ) : filteredMonths.length === 0 ? (
+            <EmptyState
+              icon={BookOpen}
+              title="No fee records"
+              description="Fee records will appear here after your fee start date."
+              dataOcid="student-fees.empty_state"
+            />
           ) : (
-            <div className="space-y-2">
-              {pendingMonths.map((m, i) => {
-                const { status, paid, due } = getMonthStatus(
-                  m,
-                  monthlyFee,
-                  payments,
-                );
-                const isCurrentMonth = m === currentMonth;
+            <div className="p-4 space-y-2.5">
+              {filteredMonths.map(({ key, paid, status }) => {
+                const cfg = STATUS_CONFIG[status];
                 return (
                   <motion.div
-                    key={m}
-                    initial={{ opacity: 0, x: -12 }}
+                    key={key}
+                    initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/20 hover:bg-muted/50 transition-fast"
-                    data-ocid={`student.fees.due.item.${i + 1}`}
+                    className="flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-fast"
+                    data-ocid={`student-fees.month_row.${key}`}
                   >
-                    <div className="flex items-center gap-3">
-                      {STATUS_STYLES[status].icon}
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {monthLabel(m)}
-                          {isCurrentMonth && (
-                            <Badge className="ml-2 text-[10px] px-1.5 py-0 bg-primary/15 text-primary">
-                              Current
-                            </Badge>
-                          )}
-                        </p>
-                        {paid > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Paid: ₹{paid.toLocaleString("en-IN")}
-                          </p>
-                        )}
-                      </div>
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`}
+                    >
+                      <cfg.icon className={`w-4 h-4 ${cfg.iconColor}`} />
                     </div>
-                    <div className="text-right">
-                      <p className="font-display font-bold text-sm text-destructive">
-                        ₹{due.toLocaleString("en-IN")}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">
+                        {formatMonth(key)}
+                        {key === currentMonth && (
+                          <span className="ml-2 text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">
+                            Current
+                          </span>
+                        )}
                       </p>
-                      <Badge
-                        className={`text-[10px] px-2 py-0.5 ${STATUS_STYLES[status].badge}`}
-                      >
-                        {status === "partial" ? "Partial" : "Unpaid"}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {paid > 0
+                          ? `₹${paid.toLocaleString("en-IN")} paid`
+                          : "No payment recorded"}
+                        {monthlyFee > 0 && paid > 0 && paid < monthlyFee && (
+                          <span className="ml-1 text-amber-500">
+                            · ₹{(monthlyFee - paid).toLocaleString("en-IN")}{" "}
+                            remaining
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-display font-semibold text-foreground text-sm">
+                        ₹{monthlyFee.toLocaleString("en-IN")}
+                      </p>
+                      <Badge className={`text-[10px] mt-1 ${cfg.badge}`}>
+                        {cfg.label}
                       </Badge>
                     </div>
                   </motion.div>
                 );
               })}
-            </div>
-          )}
-        </motion.div>
-
-        {/* Payment History by Year */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="glass-card rounded-2xl p-6 shadow-soft"
-          data-ocid="student.fees.history"
-        >
-          <h2 className="font-display font-semibold text-foreground mb-5">
-            Payment History
-          </h2>
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : years.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No history available.
-            </p>
-          ) : (
-            <div className="space-y-6">
-              {years.map((year) => (
-                <div key={year} data-ocid={`student.fees.history.year.${year}`}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    {year}
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {byYear[year].map((m) => {
-                      const { status, paid } = getMonthStatus(
-                        m,
-                        monthlyFee,
-                        payments,
-                      );
-                      const [, mo] = m.split("-");
-                      return (
-                        <div
-                          key={m}
-                          className={`p-3 rounded-xl border transition-fast ${
-                            status === "paid"
-                              ? "bg-emerald-500/8 border-emerald-500/20"
-                              : status === "partial"
-                                ? "bg-amber-500/8 border-amber-500/20"
-                                : "bg-muted/30 border-border/20"
-                          }`}
-                          data-ocid={`student.fees.history.month.${m}`}
-                        >
-                          <p className="text-xs font-medium text-foreground">
-                            {MONTH_NAMES[Number.parseInt(mo) - 1]?.slice(0, 3)}
-                          </p>
-                          {paid > 0 ? (
-                            <p className="text-xs font-bold text-foreground mt-0.5">
-                              ₹{paid.toLocaleString("en-IN")}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              ₹0
-                            </p>
-                          )}
-                          <Badge
-                            className={`mt-1.5 text-[9px] px-1.5 py-0 ${STATUS_STYLES[status].badge}`}
-                          >
-                            {status}
-                          </Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
             </div>
           )}
         </motion.div>

@@ -1,25 +1,17 @@
-import { InternetIdentityProvider } from "@caffeineai/core-infrastructure";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryProvider } from "@/providers/QueryProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { generateSeedData } from "@/utils/seedData";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-BigInt.prototype.toJSON = function () {
-  return this.toString();
-};
-
-declare global {
-  interface BigInt {
-    toJSON(): string;
-  }
-}
-
-const queryClient = new QueryClient();
+// Seed demo data on first load
+generateSeedData();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider client={queryClient}>
-    <InternetIdentityProvider>
+  <QueryProvider>
+    <ThemeProvider>
       <App />
-    </InternetIdentityProvider>
-  </QueryClientProvider>,
+    </ThemeProvider>
+  </QueryProvider>,
 );

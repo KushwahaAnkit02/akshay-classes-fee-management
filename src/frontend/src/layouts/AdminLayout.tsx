@@ -1,10 +1,9 @@
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useNotificationsByAdmin } from "@/hooks/useNotifications";
-import { useAuth } from "@/providers/AuthProvider";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   BookOpen,
@@ -15,7 +14,9 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   Settings,
+  Sun,
   Users,
   X,
 } from "lucide-react";
@@ -31,14 +32,38 @@ const NAV_ITEMS = [
   { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+      className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-fast text-muted-foreground hover:text-foreground"
+      data-ocid="admin.theme_toggle"
+    >
+      {theme === "dark" ? (
+        <Sun className="w-4 h-4" />
+      ) : (
+        <Moon className="w-4 h-4" />
+      )}
+    </button>
+  );
+}
+
 export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const { profile } = useAuthStore();
-  const { logout } = useAuth();
-  const { data: notifications = [] } = useNotificationsByAdmin();
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { data: notifications = [] } = useNotifications();
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  function handleLogout() {
+    logout();
+    navigate({ to: "/login" });
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -136,7 +161,7 @@ export function AdminLayout() {
           </button>
           <button
             type="button"
-            onClick={logout}
+            onClick={handleLogout}
             data-ocid="admin.logout_button"
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-fast"
           >
@@ -209,7 +234,7 @@ export function AdminLayout() {
               <div className="p-3 border-t border-border/30">
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-fast"
                 >
                   <LogOut className="w-4 h-4" />
@@ -254,10 +279,10 @@ export function AdminLayout() {
             </Link>
             <div className="flex items-center gap-2 pl-2 border-l border-border/50">
               <div className="w-8 h-8 rounded-full gradient-accent flex items-center justify-center text-xs font-bold text-primary-foreground">
-                {profile?.name?.[0]?.toUpperCase() ?? "A"}
+                {user?.name?.[0]?.toUpperCase() ?? "A"}
               </div>
               <span className="hidden sm:block text-sm font-medium text-foreground truncate max-w-[120px]">
-                {profile?.name ?? "Admin"}
+                {user?.name ?? "Admin"}
               </span>
             </div>
           </div>
