@@ -1,19 +1,19 @@
-export type NotificationType = "alert" | "reminder" | "update";
+export type NotificationType = "alert" | "reminder" | "update" | "payment";
 
 export interface Notification {
   id: string;
-  adminId: string;
-  studentId?: string;
+  admin_id: string;
+  student_id: string | null;
   title: string;
   message: string;
-  type_: NotificationType;
-  isRead: boolean;
-  createdAt: string;
+  type: NotificationType;
+  is_read: boolean;
+  created_at: string;
 }
 
 export interface CreateNotificationForm {
-  studentId?: string;
+  student_id?: string;
   title: string;
   message: string;
-  type_: NotificationType;
+  type: NotificationType;
 }

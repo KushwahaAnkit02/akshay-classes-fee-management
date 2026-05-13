@@ -20,7 +20,11 @@ import {
   usePayments,
 } from "@/hooks/usePayments";
 import { useStudents } from "@/hooks/useStudents";
-import type { Payment, PaymentMethod } from "@/types/payment";
+import type {
+  Payment,
+  PaymentMethod,
+  RecordPaymentForm,
+} from "@/types/payment";
 import { formatMonth, getCurrentMonthKey } from "@/utils/formatters";
 import {
   BookOpen,
@@ -61,39 +65,39 @@ interface RecordPaymentModalProps {
 function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
   const { data: students = [] } = useStudents();
   const addPayment = useAddPayment();
-  const activeStudents = students.filter((s) => s.isActive);
+  const activeStudents = students.filter((s) => s.is_active);
 
-  const [form, setForm] = useState({
-    studentId: "",
+  const [form, setForm] = useState<RecordPaymentForm>({
+    student_id: "",
     month: getCurrentMonthKey(),
-    amountPaid: 0,
-    paymentMethod: "cash" as PaymentMethod,
+    amount_paid: 0,
+    payment_method: "cash" as PaymentMethod,
     notes: "",
-    paymentDate: new Date().toISOString().split("T")[0],
+    payment_date: new Date().toISOString().split("T")[0],
   });
   const [errors, setErrors] = useState<{
-    studentId?: string;
-    amountPaid?: string;
+    student_id?: string;
+    amount_paid?: string;
   }>({});
 
-  const selectedStudent = activeStudents.find((s) => s.id === form.studentId);
+  const selectedStudent = activeStudents.find((s) => s.id === form.student_id);
 
   function handleStudentChange(id: string) {
     const s = activeStudents.find((st) => st.id === id);
     setForm((p) => ({
       ...p,
-      studentId: id,
-      amountPaid: s?.monthlyFee ?? p.amountPaid,
+      student_id: id,
+      amount_paid: s?.monthly_fee ?? p.amount_paid,
     }));
-    if (errors.studentId) setErrors((e) => ({ ...e, studentId: undefined }));
+    if (errors.student_id) setErrors((e) => ({ ...e, student_id: undefined }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const errs: { studentId?: string; amountPaid?: string } = {};
-    if (!form.studentId) errs.studentId = "Select a student";
-    if (!form.amountPaid || form.amountPaid <= 0)
-      errs.amountPaid = "Amount must be > 0";
+    const errs: { student_id?: string; amount_paid?: string } = {};
+    if (!form.student_id) errs.student_id = "Select a student";
+    if (!form.amount_paid || form.amount_paid <= 0)
+      errs.amount_paid = "Amount must be > 0";
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
@@ -101,15 +105,15 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
     try {
       await addPayment.mutateAsync(form);
       toast.success(
-        `Payment of ₹${form.amountPaid.toLocaleString("en-IN")} recorded for ${selectedStudent?.name}!`,
+        `Payment of ₹${form.amount_paid.toLocaleString("en-IN")} recorded for ${selectedStudent?.name}!`,
       );
       setForm({
-        studentId: "",
+        student_id: "",
         month: getCurrentMonthKey(),
-        amountPaid: 0,
-        paymentMethod: "cash",
+        amount_paid: 0,
+        payment_method: "cash",
         notes: "",
-        paymentDate: new Date().toISOString().split("T")[0],
+        payment_date: new Date().toISOString().split("T")[0],
       });
       setErrors({});
       onClose();
@@ -163,11 +167,11 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
                     Student <span className="text-destructive">*</span>
                   </Label>
                   <Select
-                    value={form.studentId}
+                    value={form.student_id}
                     onValueChange={handleStudentChange}
                   >
                     <SelectTrigger
-                      className={errors.studentId ? "border-destructive" : ""}
+                      className={errors.student_id ? "border-destructive" : ""}
                       data-ocid="record_payment_modal.student_select"
                     >
                       <SelectValue placeholder="Select student" />
@@ -175,17 +179,17 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
                     <SelectContent>
                       {activeStudents.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
-                          {s.name} — ₹{s.monthlyFee.toLocaleString("en-IN")}/mo
+                          {s.name} — ₹{s.monthly_fee.toLocaleString("en-IN")}/mo
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.studentId && (
+                  {errors.student_id && (
                     <p
                       className="text-xs text-destructive"
                       data-ocid="record_payment_modal.student_error"
                     >
-                      {errors.studentId}
+                      {errors.student_id}
                     </p>
                   )}
                 </div>
@@ -208,21 +212,24 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
                     <Input
                       type="number"
                       min={1}
-                      value={form.amountPaid || ""}
+                      value={form.amount_paid || ""}
                       onChange={(e) => {
                         setForm((p) => ({
                           ...p,
-                          amountPaid: Number(e.target.value),
+                          amount_paid: Number(e.target.value),
                         }));
-                        if (errors.amountPaid)
-                          setErrors((er) => ({ ...er, amountPaid: undefined }));
+                        if (errors.amount_paid)
+                          setErrors((er) => ({
+                            ...er,
+                            amount_paid: undefined,
+                          }));
                       }}
-                      className={errors.amountPaid ? "border-destructive" : ""}
+                      className={errors.amount_paid ? "border-destructive" : ""}
                       data-ocid="record_payment_modal.amount_input"
                     />
-                    {errors.amountPaid && (
+                    {errors.amount_paid && (
                       <p className="text-xs text-destructive">
-                        {errors.amountPaid}
+                        {errors.amount_paid}
                       </p>
                     )}
                   </div>
@@ -231,11 +238,11 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
                   <div className="space-y-1.5">
                     <Label>Payment Method</Label>
                     <Select
-                      value={form.paymentMethod}
+                      value={form.payment_method}
                       onValueChange={(v) =>
                         setForm((p) => ({
                           ...p,
-                          paymentMethod: v as PaymentMethod,
+                          payment_method: v as PaymentMethod,
                         }))
                       }
                     >
@@ -255,9 +262,12 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
                     <Label>Payment Date</Label>
                     <Input
                       type="date"
-                      value={form.paymentDate}
+                      value={form.payment_date}
                       onChange={(e) =>
-                        setForm((p) => ({ ...p, paymentDate: e.target.value }))
+                        setForm((p) => ({
+                          ...p,
+                          payment_date: e.target.value,
+                        }))
                       }
                       data-ocid="record_payment_modal.date_input"
                     />
@@ -267,7 +277,7 @@ function RecordPaymentModal({ open, onClose }: RecordPaymentModalProps) {
                   <Label>Notes (optional)</Label>
                   <Textarea
                     placeholder="e.g. UPI reference, cheque no..."
-                    value={form.notes}
+                    value={form.notes ?? ""}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, notes: e.target.value }))
                     }
@@ -329,24 +339,22 @@ export function AdminPaymentsPage() {
     let list = [...payments];
     const q = search.toLowerCase();
     if (q)
-      list = list.filter(
-        (p) =>
-          p.studentName.toLowerCase().includes(q) ||
-          (studentMap.get(p.studentId)?.name ?? "").toLowerCase().includes(q),
+      list = list.filter((p) =>
+        (studentMap.get(p.student_id)?.name ?? "").toLowerCase().includes(q),
       );
     if (filterMonth !== "all")
       list = list.filter((p) => p.month === filterMonth);
     if (filterMethod !== "all")
-      list = list.filter((p) => p.paymentMethod === filterMethod);
+      list = list.filter((p) => p.payment_method === filterMethod);
     return list.sort(
       (a, b) =>
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+        new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime(),
     );
   }, [payments, search, filterMonth, filterMethod, studentMap]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalAmount = filtered.reduce((sum, p) => sum + p.amountPaid, 0);
+  const totalAmount = filtered.reduce((sum, p) => sum + p.amount_paid, 0);
 
   return (
     <PageTransition>
@@ -488,7 +496,7 @@ export function AdminPaymentsPage() {
                 <tbody>
                   <AnimatePresence mode="popLayout">
                     {paginated.map((payment, idx) => {
-                      const m = METHOD_BADGE[payment.paymentMethod];
+                      const m = METHOD_BADGE[payment.payment_method];
                       return (
                         <motion.tr
                           key={payment.id}
@@ -503,8 +511,8 @@ export function AdminPaymentsPage() {
                             <div className="flex items-center gap-2.5">
                               <div className="w-7 h-7 rounded-full gradient-accent flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
                                 {(
-                                  studentMap.get(payment.studentId)?.name ??
-                                  payment.studentName
+                                  studentMap.get(payment.student_id)?.name ??
+                                  "Unknown"
                                 )
                                   .split(" ")
                                   .map((n) => n[0])
@@ -513,8 +521,8 @@ export function AdminPaymentsPage() {
                                   .slice(0, 2)}
                               </div>
                               <span className="font-medium text-foreground truncate max-w-[120px]">
-                                {studentMap.get(payment.studentId)?.name ??
-                                  payment.studentName}
+                                {studentMap.get(payment.student_id)?.name ??
+                                  "Unknown"}
                               </span>
                             </div>
                           </td>
@@ -522,7 +530,7 @@ export function AdminPaymentsPage() {
                             {formatMonth(payment.month)}
                           </td>
                           <td className="px-5 py-3 text-right font-display font-semibold text-foreground">
-                            ₹{payment.amountPaid.toLocaleString("en-IN")}
+                            ₹{payment.amount_paid.toLocaleString("en-IN")}
                           </td>
                           <td className="px-5 py-3 hidden md:table-cell">
                             <span
@@ -532,7 +540,7 @@ export function AdminPaymentsPage() {
                             </span>
                           </td>
                           <td className="px-5 py-3 text-muted-foreground text-xs hidden lg:table-cell">
-                            {new Date(payment.paymentDate).toLocaleDateString(
+                            {new Date(payment.payment_date).toLocaleDateString(
                               "en-IN",
                               {
                                 day: "2-digit",
@@ -598,7 +606,13 @@ export function AdminPaymentsPage() {
       <ConfirmModal
         open={!!deleteTarget}
         title="Delete Payment?"
-        description={`This will permanently delete the payment of ₹${deleteTarget?.amountPaid?.toLocaleString("en-IN") ?? ""} for ${deleteTarget ? (studentMap.get(deleteTarget.studentId)?.name ?? deleteTarget.studentName) : ""}.`}
+        description={`This will permanently delete the payment of ₹${
+          deleteTarget?.amount_paid?.toLocaleString("en-IN") ?? ""
+        } for ${
+          deleteTarget
+            ? (studentMap.get(deleteTarget.student_id)?.name ?? "Unknown")
+            : ""
+        }.`}
         confirmLabel="Delete"
         variant="danger"
         onConfirm={async () => {

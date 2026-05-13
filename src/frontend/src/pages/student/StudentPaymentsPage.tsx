@@ -52,19 +52,19 @@ export default function StudentPaymentsPage() {
       const q = search.toLowerCase();
       list = list.filter(
         (p) =>
-          p.paymentMethod.includes(q) ||
+          p.payment_method.includes(q) ||
           (p.notes?.toLowerCase().includes(q) ?? false) ||
           formatMonth(p.month).toLowerCase().includes(q),
       );
     }
     return list.sort(
       (a, b) =>
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+        new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime(),
     );
   }, [payments, filterMonth, search]);
 
-  const totalAll = payments.reduce((sum, p) => sum + p.amountPaid, 0);
-  const totalFiltered = filtered.reduce((sum, p) => sum + p.amountPaid, 0);
+  const totalAll = payments.reduce((sum, p) => sum + p.amount_paid, 0);
+  const totalFiltered = filtered.reduce((sum, p) => sum + p.amount_paid, 0);
   const isFiltering = filterMonth !== "all" || search.length > 0;
 
   return (
@@ -240,24 +240,24 @@ export default function StudentPaymentsPage() {
                       </td>
                       <td className="px-5 py-3 text-right">
                         <span className="font-display font-semibold text-foreground">
-                          ₹{p.amountPaid.toLocaleString("en-IN")}
+                          ₹{p.amount_paid.toLocaleString("en-IN")}
                         </span>
                       </td>
                       <td className="px-5 py-3 hidden sm:table-cell">
                         <Badge
                           className={`text-xs capitalize ${
-                            METHOD_BADGE[p.paymentMethod] ??
+                            METHOD_BADGE[p.payment_method] ??
                             "bg-muted text-muted-foreground"
                           }`}
                         >
                           <span className="mr-1">
-                            {METHOD_ICONS[p.paymentMethod] ?? ""}
+                            {METHOD_ICONS[p.payment_method] ?? ""}
                           </span>
-                          {p.paymentMethod}
+                          {p.payment_method}
                         </Badge>
                       </td>
                       <td className="px-5 py-3 text-muted-foreground text-xs hidden md:table-cell">
-                        {formatDate(p.paymentDate)}
+                        {formatDate(p.payment_date)}
                       </td>
                       <td className="px-5 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-[180px] truncate">
                         {p.notes ?? "—"}

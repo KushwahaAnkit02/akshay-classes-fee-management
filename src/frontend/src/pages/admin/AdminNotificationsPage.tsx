@@ -63,6 +63,12 @@ const TYPE_META: Record<
     color: "text-primary",
     bg: "bg-primary/10",
   },
+  payment: {
+    label: "Payment",
+    icon: CheckCircle,
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+  },
 };
 
 export function AdminNotificationsPage() {
@@ -76,18 +82,18 @@ export function AdminNotificationsPage() {
   const [form, setForm] = useState<CreateNotificationForm>({
     title: "",
     message: "",
-    type_: "update",
-    studentId: undefined,
+    type: "update",
+    student_id: undefined,
   });
   const [sending, setSending] = useState(false);
   const [filterType, setFilterType] = useState<NotificationType | "all">("all");
 
-  const unread = notifications.filter((n) => !n.isRead).length;
+  const unread = notifications.filter((n) => !n.is_read).length;
 
   const filtered =
     filterType === "all"
       ? notifications
-      : notifications.filter((n) => n.type_ === filterType);
+      : notifications.filter((n) => n.type === filterType);
 
   const studentMap = new Map(students.map((s) => [s.id, s]));
 
@@ -104,8 +110,8 @@ export function AdminNotificationsPage() {
       setForm({
         title: "",
         message: "",
-        type_: "update",
-        studentId: undefined,
+        type: "update",
+        student_id: undefined,
       });
     } catch {
       toast.error("Failed to send notification");
@@ -156,9 +162,9 @@ export function AdminNotificationsPage() {
                 <div className="space-y-1.5">
                   <Label>Type</Label>
                   <Select
-                    value={form.type_}
+                    value={form.type}
                     onValueChange={(v) =>
-                      setForm((p) => ({ ...p, type_: v as NotificationType }))
+                      setForm((p) => ({ ...p, type: v as NotificationType }))
                     }
                   >
                     <SelectTrigger data-ocid="notifications.type_select">
@@ -174,11 +180,11 @@ export function AdminNotificationsPage() {
                 <div className="space-y-1.5">
                   <Label>To (optional)</Label>
                   <Select
-                    value={form.studentId ?? "all"}
+                    value={form.student_id ?? "all"}
                     onValueChange={(v) =>
                       setForm((p) => ({
                         ...p,
-                        studentId: v === "all" ? undefined : v,
+                        student_id: v === "all" ? undefined : v,
                       }))
                     }
                   >
@@ -302,9 +308,9 @@ export function AdminNotificationsPage() {
                 <div className="divide-y divide-border/20 max-h-[600px] overflow-y-auto">
                   <AnimatePresence mode="popLayout">
                     {filtered.map((notif, idx) => {
-                      const meta = TYPE_META[notif.type_];
-                      const recipient = notif.studentId
-                        ? studentMap.get(notif.studentId)
+                      const meta = TYPE_META[notif.type];
+                      const recipient = notif.student_id
+                        ? studentMap.get(notif.student_id)
                         : null;
                       return (
                         <motion.div
@@ -313,7 +319,7 @@ export function AdminNotificationsPage() {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0 }}
                           transition={{ delay: Math.min(idx, 8) * 0.04 }}
-                          className={`flex items-start gap-4 px-5 py-4 transition-fast ${!notif.isRead ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                          className={`flex items-start gap-4 px-5 py-4 transition-fast ${!notif.is_read ? "bg-primary/5" : "hover:bg-muted/20"}`}
                           data-ocid={`notifications.item.${idx + 1}`}
                         >
                           <div
@@ -324,11 +330,11 @@ export function AdminNotificationsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p
-                                className={`text-sm font-medium truncate ${!notif.isRead ? "text-foreground" : "text-muted-foreground"}`}
+                                className={`text-sm font-medium truncate ${!notif.is_read ? "text-foreground" : "text-muted-foreground"}`}
                               >
                                 {notif.title}
                               </p>
-                              {!notif.isRead && (
+                              {!notif.is_read && (
                                 <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                               )}
                               <Badge
@@ -342,7 +348,7 @@ export function AdminNotificationsPage() {
                                   → {recipient.name}
                                 </span>
                               )}
-                              {!notif.studentId && (
+                              {!notif.student_id && (
                                 <span className="text-[10px] text-muted-foreground">
                                   → All Students
                                 </span>
@@ -352,7 +358,7 @@ export function AdminNotificationsPage() {
                               {notif.message}
                             </p>
                             <p className="text-[10px] text-muted-foreground/70 mt-1">
-                              {new Date(notif.createdAt).toLocaleDateString(
+                              {new Date(notif.created_at).toLocaleDateString(
                                 "en-IN",
                                 {
                                   day: "2-digit",
@@ -365,7 +371,7 @@ export function AdminNotificationsPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            {!notif.isRead && (
+                            {!notif.is_read && (
                               <button
                                 type="button"
                                 onClick={() => markAsRead.mutate(notif.id)}

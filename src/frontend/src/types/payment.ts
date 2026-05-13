@@ -4,29 +4,28 @@ export type PaymentStatus = "paid" | "pending" | "overdue";
 
 export interface Payment {
   id: string;
-  studentId: string;
-  studentName: string;
-  adminId: string;
+  student_id: string;
+  admin_id: string;
   month: string;
-  amountPaid: number;
-  paymentMethod: PaymentMethod;
-  notes?: string;
-  paymentDate: string;
-  createdAt: string;
+  amount_paid: number;
+  payment_method: PaymentMethod;
+  notes: string | null;
+  payment_date: string;
+  created_at: string;
 }
 
 export interface RecordPaymentForm {
-  studentId: string;
+  student_id: string;
   month: string;
-  amountPaid: number;
-  paymentMethod: PaymentMethod;
+  amount_paid: number;
+  payment_method: PaymentMethod;
   notes?: string;
-  paymentDate: string;
+  payment_date: string;
 }
 
-export interface UpdatePaymentForm {
-  amountPaid?: number;
-  paymentMethod?: PaymentMethod;
-  notes?: string;
-  paymentDate?: string;
+export interface PaymentStats {
+  totalPaid: number;
+  totalPending: number;
+  revenueChartData: Array<{ month: string; revenue: number }>;
+  paymentStatusData: Array<{ name: string; value: number }>;
 }

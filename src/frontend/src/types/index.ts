@@ -6,7 +6,6 @@ export type {
   PaymentMethod,
   PaymentStatus,
   RecordPaymentForm,
-  UpdatePaymentForm,
 } from "./payment";
 export type {
   Notification,

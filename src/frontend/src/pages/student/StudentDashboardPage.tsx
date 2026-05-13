@@ -68,25 +68,25 @@ function NotificationItem({
   notif,
   onRead,
 }: { notif: Notification; onRead: (id: string) => void }) {
-  const IconComp = NOTIF_ICONS[notif.type_] ?? Bell;
+  const IconComp = NOTIF_ICONS[notif.type] ?? Bell;
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       className={`flex items-start gap-3 p-3 rounded-xl transition-fast cursor-default ${
-        !notif.isRead
+        !notif.is_read
           ? "bg-primary/8 border border-primary/20"
           : "hover:bg-muted/30"
       }`}
     >
       <div
         className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-          !notif.isRead ? "bg-primary/15" : "bg-muted"
+          !notif.is_read ? "bg-primary/15" : "bg-muted"
         }`}
       >
         <IconComp
           className={`w-4 h-4 ${
-            !notif.isRead ? "text-primary" : "text-muted-foreground"
+            !notif.is_read ? "text-primary" : "text-muted-foreground"
           }`}
         />
       </div>
@@ -94,12 +94,12 @@ function NotificationItem({
         <div className="flex items-start justify-between gap-1">
           <p
             className={`text-sm font-medium truncate ${
-              !notif.isRead ? "text-foreground" : "text-muted-foreground"
+              !notif.is_read ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             {notif.title}
           </p>
-          {!notif.isRead && (
+          {!notif.is_read && (
             <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
           )}
         </div>
@@ -107,13 +107,13 @@ function NotificationItem({
           {notif.message}
         </p>
         <p className="text-[10px] text-muted-foreground/60 mt-1">
-          {new Date(notif.createdAt).toLocaleDateString("en-IN", {
+          {new Date(notif.created_at).toLocaleDateString("en-IN", {
             day: "2-digit",
             month: "short",
           })}
         </p>
       </div>
-      {!notif.isRead && (
+      {!notif.is_read && (
         <button
           type="button"
           onClick={() => onRead(notif.id)}
@@ -140,17 +140,17 @@ export default function StudentDashboardPage() {
 
   const currentMonth = getCurrentMonthKey();
   const paidThisMonth = payments
-    .filter((p) => getMonthKey(p.paymentDate) === currentMonth)
-    .reduce((sum, p) => sum + p.amountPaid, 0);
-  const monthlyFee = studentRecord?.monthlyFee ?? 0;
-  const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+    .filter((p) => getMonthKey(p.payment_date) === currentMonth)
+    .reduce((sum, p) => sum + p.amount_paid, 0);
+  const monthlyFee = studentRecord?.monthly_fee ?? 0;
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount_paid, 0);
   const pendingAmount = Math.max(0, monthlyFee - paidThisMonth);
   const isPaidThisMonth = pendingAmount === 0 && monthlyFee > 0;
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
   const recentPayments = [...payments]
     .sort(
       (a, b) =>
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+        new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime(),
     )
     .slice(0, 5);
   const recentNotifs = notifications.slice(0, 3);
@@ -161,8 +161,8 @@ export default function StudentDashboardPage() {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const paid = payments
-      .filter((p) => getMonthKey(p.paymentDate) === key)
-      .reduce((sum, p) => sum + p.amountPaid, 0);
+      .filter((p) => getMonthKey(p.payment_date) === key)
+      .reduce((sum, p) => sum + p.amount_paid, 0);
     return { month: MONTH_NAMES[d.getMonth()], paid };
   });
 
@@ -494,20 +494,20 @@ export default function StudentDashboardPage() {
                         {formatMonth(p.month)}
                       </td>
                       <td className="px-5 py-3 text-right font-display font-semibold text-foreground">
-                        ₹{p.amountPaid.toLocaleString("en-IN")}
+                        ₹{p.amount_paid.toLocaleString("en-IN")}
                       </td>
                       <td className="px-5 py-3 hidden sm:table-cell">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                            METHOD_COLORS[p.paymentMethod] ??
+                            METHOD_COLORS[p.payment_method] ??
                             "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {p.paymentMethod}
+                          {p.payment_method}
                         </span>
                       </td>
                       <td className="px-5 py-3 text-muted-foreground text-xs hidden md:table-cell">
-                        {formatDate(p.paymentDate)}
+                        {formatDate(p.payment_date)}
                       </td>
                     </tr>
                   ))}

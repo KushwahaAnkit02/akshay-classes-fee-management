@@ -22,38 +22,36 @@ export function useAdminDashboard() {
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
 
   const currentMonth = getCurrentMonthKey();
-  const activeStudents = students.filter((s) => s.isActive);
+  const activeStudents = students.filter((s) => s.is_active);
   const totalStudents = activeStudents.length;
 
-  const totalRevenue = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+  const totalRevenue = payments.reduce((sum, p) => sum + p.amount_paid, 0);
   const totalPotential = activeStudents.reduce(
-    (sum, s) => sum + s.monthlyFee,
+    (sum, s) => sum + s.monthly_fee,
     0,
   );
   const paidThisMonth = payments
-    .filter((p) => getMonthKey(p.paymentDate) === currentMonth)
-    .reduce((sum, p) => sum + p.amountPaid, 0);
+    .filter((p) => getMonthKey(p.payment_date) === currentMonth)
+    .reduce((sum, p) => sum + p.amount_paid, 0);
   const pendingFees = Math.max(0, totalPotential - paidThisMonth);
 
   const recentPayments = [...payments]
     .sort(
       (a, b) =>
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+        new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime(),
     )
     .slice(0, 5);
 
-  // Build last 6 months revenue chart data
   const now = new Date();
   const revenueChartData = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const revenue = payments
-      .filter((p) => getMonthKey(p.paymentDate) === key)
-      .reduce((sum, p) => sum + p.amountPaid, 0);
+      .filter((p) => getMonthKey(p.payment_date) === key)
+      .reduce((sum, p) => sum + p.amount_paid, 0);
     return { month: MONTH_LABELS[d.getMonth()], revenue };
   });
 
-  // Pie chart: paid vs pending this month
   const paymentStatusData = [
     { name: "Collected", value: paidThisMonth, color: "oklch(0.72 0.18 190)" },
     {

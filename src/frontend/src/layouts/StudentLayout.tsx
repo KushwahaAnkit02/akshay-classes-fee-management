@@ -58,7 +58,7 @@ export function StudentLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { data: notifications = [] } = useStudentNotifications(user?.id ?? "");
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
   const { mutate: markAsRead } = useMarkAsRead();
   const { mutate: markAllAsRead } = useMarkAllAsRead();
 
@@ -291,18 +291,18 @@ export function StudentLayout() {
                             key={n.id}
                             type="button"
                             onClick={() => {
-                              if (!n.isRead) markAsRead(n.id);
+                              if (!n.is_read) markAsRead(n.id);
                             }}
                             className={`w-full text-left px-4 py-3 border-b border-border/20 last:border-0 hover:bg-muted/50 transition-fast ${
-                              !n.isRead ? "bg-primary/5" : ""
+                              !n.is_read ? "bg-primary/5" : ""
                             }`}
                             data-ocid="student.notifications.item"
                           >
                             <div className="flex items-start gap-2">
-                              {!n.isRead && (
+                              {!n.is_read && (
                                 <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
                               )}
-                              <div className={!n.isRead ? "" : "pl-4"}>
+                              <div className={!n.is_read ? "" : "pl-4"}>
                                 <p className="text-xs font-semibold text-foreground leading-tight">
                                   {n.title}
                                 </p>

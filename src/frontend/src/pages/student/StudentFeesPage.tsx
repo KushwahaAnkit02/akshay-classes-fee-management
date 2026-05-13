@@ -32,7 +32,7 @@ import { useMemo, useState } from "react";
 function buildMonthsSince(
   startDate: string,
   monthlyFee: number,
-  payments: Array<{ month: string; amountPaid: number }>,
+  payments: Array<{ month: string; amount_paid: number }>,
 ) {
   const start = new Date(startDate);
   const now = new Date();
@@ -48,7 +48,7 @@ function buildMonthsSince(
     const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
     const monthPaid = payments
       .filter((p) => p.month === key)
-      .reduce((sum, p) => sum + p.amountPaid, 0);
+      .reduce((sum, p) => sum + p.amount_paid, 0);
     const isCurrentMonth = key === getCurrentMonthKey();
     let status: "Paid" | "Partial" | "Pending" | "Current";
     if (monthPaid >= monthlyFee) {
@@ -105,16 +105,16 @@ export default function StudentFeesPage() {
   const studentRecord = allStudents.find((s) => s.id === studentId);
 
   const currentMonth = getCurrentMonthKey();
-  const monthlyFee = studentRecord?.monthlyFee ?? 0;
+  const monthlyFee = studentRecord?.monthly_fee ?? 0;
   const paidThisMonth = payments
-    .filter((p) => getMonthKey(p.paymentDate) === currentMonth)
-    .reduce((sum, p) => sum + p.amountPaid, 0);
+    .filter((p) => getMonthKey(p.payment_date) === currentMonth)
+    .reduce((sum, p) => sum + p.amount_paid, 0);
   const pendingThisMonth = Math.max(0, monthlyFee - paidThisMonth);
-  const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount_paid, 0);
 
   const allMonths = useMemo(() => {
     if (!studentRecord) return [];
-    return buildMonthsSince(studentRecord.feeStartDate, monthlyFee, payments);
+    return buildMonthsSince(studentRecord.fee_start_date, monthlyFee, payments);
   }, [studentRecord, monthlyFee, payments]);
 
   const years = useMemo(() => {
@@ -244,7 +244,7 @@ export default function StudentFeesPage() {
                 { label: "Course", value: studentRecord.course },
                 {
                   label: "Joined",
-                  value: new Date(studentRecord.joinedDate).toLocaleDateString(
+                  value: new Date(studentRecord.joined_date).toLocaleDateString(
                     "en-IN",
                     {
                       day: "2-digit",
@@ -255,7 +255,7 @@ export default function StudentFeesPage() {
                 },
                 {
                   label: "Status",
-                  value: studentRecord.isActive ? "Active" : "Inactive",
+                  value: studentRecord.is_active ? "Active" : "Inactive",
                   isStatus: true,
                 },
               ].map((item) => (

@@ -1,16 +1,17 @@
 export interface Student {
   id: string;
+  profile_id: string | null;
+  admin_id: string;
   name: string;
   email: string;
   class_: string;
   course: string;
-  monthlyFee: number;
-  joinedDate: string;
-  feeStartDate: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  profileId?: string;
+  monthly_fee: number;
+  joined_date: string;
+  fee_start_date: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateStudentForm {
@@ -18,16 +19,11 @@ export interface CreateStudentForm {
   email: string;
   class_: string;
   course: string;
-  monthlyFee: number;
-  joinedDate: string;
-  feeStartDate: string;
+  monthly_fee: number;
+  joined_date: string;
+  fee_start_date: string;
 }
 
-export interface UpdateStudentForm {
-  name?: string;
-  email?: string;
-  class_?: string;
-  course?: string;
-  monthlyFee?: number;
-  isActive?: boolean;
+export interface UpdateStudentForm extends Partial<CreateStudentForm> {
+  is_active?: boolean;
 }

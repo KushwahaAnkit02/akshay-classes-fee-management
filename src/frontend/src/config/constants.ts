@@ -1,28 +1,5 @@
-export const STORAGE_KEYS = {
-  AKSHAY_AUTH: "akshay_auth",
-  AKSHAY_STUDENTS: "akshay_students",
-  AKSHAY_PAYMENTS: "akshay_payments",
-  AKSHAY_NOTIFICATIONS: "akshay_notifications",
-  AKSHAY_SETTINGS: "akshay_settings",
-  AKSHAY_SEEDED: "akshay_seeded",
-} as const;
-
-export const DEMO_CREDENTIALS = {
-  admin: {
-    email: "admin@akshayclasses.com",
-    password: "admin123",
-    role: "admin" as const,
-    name: "Akshay Sharma",
-    id: "admin-001",
-  },
-  student: {
-    email: "student@akshayclasses.com",
-    password: "student123",
-    role: "student" as const,
-    name: "Rahul Verma",
-    id: "student-demo-001",
-  },
-} as const;
+// Auth-related localStorage key (only used to persist Google OAuth intended role)
+export const AUTH_ROLE_KEY = "auth_intended_role";
 
 export const ITEMS_PER_PAGE = 10;
 

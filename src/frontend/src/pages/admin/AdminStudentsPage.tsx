@@ -46,7 +46,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "inactive";
-type SortKey = "name" | "monthlyFee" | "joinedDate";
+type SortKey = "name" | "monthly_fee" | "joined_date";
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 20;
@@ -88,9 +88,9 @@ function StudentDetailsModal({
   onEdit: () => void;
 }) {
   const { data: payments = [] } = usePaymentsByStudent(student?.id ?? "");
-  const totalPaid = payments.reduce((s, p) => s + p.amountPaid, 0);
+  const totalPaid = payments.reduce((s, p) => s + p.amount_paid, 0);
   const pendingBalance = student
-    ? Math.max(0, student.monthlyFee - totalPaid)
+    ? Math.max(0, student.monthly_fee - totalPaid)
     : 0;
 
   return (
@@ -144,10 +144,10 @@ function StudentDetailsModal({
                     </p>
                   </div>
                   <Badge
-                    className={`ml-auto ${student.isActive ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-muted text-muted-foreground"}`}
-                    variant={student.isActive ? "default" : "secondary"}
+                    className={`ml-auto ${student.is_active ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-muted text-muted-foreground"}`}
+                    variant={student.is_active ? "default" : "secondary"}
                   >
-                    {student.isActive ? "Active" : "Inactive"}
+                    {student.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
 
@@ -157,10 +157,10 @@ function StudentDetailsModal({
                     [
                       ["Class", student.class_],
                       ["Course", student.course],
-                      ["Monthly Fee", formatCurrency(student.monthlyFee)],
-                      ["Joined", formatDate(student.joinedDate)],
-                      ["Fee Start", formatDate(student.feeStartDate)],
-                      ["Enrolled On", formatDate(student.createdAt)],
+                      ["Monthly Fee", formatCurrency(student.monthly_fee)],
+                      ["Joined", formatDate(student.joined_date)],
+                      ["Fee Start", formatDate(student.fee_start_date)],
+                      ["Enrolled On", formatDate(student.created_at)],
                     ] as [string, string][]
                   ).map(([label, value]) => (
                     <div key={label} className="bg-muted/30 rounded-xl p-3">
@@ -249,9 +249,9 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
     email: "",
     class_: "",
     course: "",
-    monthlyFee: 0,
-    joinedDate: new Date().toISOString().split("T")[0],
-    feeStartDate: new Date().toISOString().split("T")[0],
+    monthly_fee: 0,
+    joined_date: new Date().toISOString().split("T")[0],
+    fee_start_date: new Date().toISOString().split("T")[0],
   };
 
   const [form, setForm] = useState<CreateStudentForm>(defaultForm);
@@ -269,9 +269,9 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
         email: student.email,
         class_: student.class_,
         course: student.course,
-        monthlyFee: student.monthlyFee,
-        joinedDate: student.joinedDate,
-        feeStartDate: student.feeStartDate,
+        monthly_fee: student.monthly_fee,
+        joined_date: student.joined_date,
+        fee_start_date: student.fee_start_date,
       });
     } else {
       setForm(defaultForm);
@@ -288,10 +288,10 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
       e.email = "Invalid email";
     if (!form.class_.trim()) e.class_ = "Class is required";
     if (!form.course.trim()) e.course = "Course is required";
-    if (!form.monthlyFee || form.monthlyFee <= 0)
-      e.monthlyFee = "Fee must be > 0";
-    if (!form.joinedDate) e.joinedDate = "Required";
-    if (!form.feeStartDate) e.feeStartDate = "Required";
+    if (!form.monthly_fee || form.monthly_fee <= 0)
+      e.monthly_fee = "Fee must be > 0";
+    if (!form.joined_date) e.joined_date = "Required";
+    if (!form.fee_start_date) e.fee_start_date = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -306,7 +306,7 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
           email: form.email,
           class_: form.class_,
           course: form.course,
-          monthlyFee: form.monthlyFee,
+          monthly_fee: form.monthly_fee,
         };
         await updateMutation.mutateAsync({ id: student.id, data: upd });
         toast.success("Student updated successfully!");
@@ -468,16 +468,16 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                       type="number"
                       min={1}
                       placeholder="e.g. 1500"
-                      value={form.monthlyFee || ""}
+                      value={form.monthly_fee || ""}
                       onChange={(e) =>
-                        field("monthlyFee", Number(e.target.value))
+                        field("monthly_fee", Number(e.target.value))
                       }
-                      className={errors.monthlyFee ? "border-destructive" : ""}
+                      className={errors.monthly_fee ? "border-destructive" : ""}
                       data-ocid="student_modal.fee_input"
                     />
-                    {errors.monthlyFee && (
+                    {errors.monthly_fee && (
                       <p className="text-xs text-destructive">
-                        {errors.monthlyFee}
+                        {errors.monthly_fee}
                       </p>
                     )}
                   </div>
@@ -488,14 +488,14 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                     <Input
                       id="s-joined"
                       type="date"
-                      value={form.joinedDate}
-                      onChange={(e) => field("joinedDate", e.target.value)}
-                      className={errors.joinedDate ? "border-destructive" : ""}
+                      value={form.joined_date}
+                      onChange={(e) => field("joined_date", e.target.value)}
+                      className={errors.joined_date ? "border-destructive" : ""}
                       data-ocid="student_modal.joined_date_input"
                     />
-                    {errors.joinedDate && (
+                    {errors.joined_date && (
                       <p className="text-xs text-destructive">
-                        {errors.joinedDate}
+                        {errors.joined_date}
                       </p>
                     )}
                   </div>
@@ -506,14 +506,14 @@ function StudentModal({ open, student, onClose }: StudentModalProps) {
                     <Input
                       id="s-fee-start"
                       type="date"
-                      value={form.feeStartDate}
-                      onChange={(e) => field("feeStartDate", e.target.value)}
-                      className={`${errors.feeStartDate ? "border-destructive" : ""} sm:max-w-xs`}
+                      value={form.fee_start_date}
+                      onChange={(e) => field("fee_start_date", e.target.value)}
+                      className={`${errors.fee_start_date ? "border-destructive" : ""} sm:max-w-xs`}
                       data-ocid="student_modal.fee_start_date_input"
                     />
-                    {errors.feeStartDate && (
+                    {errors.fee_start_date && (
                       <p className="text-xs text-destructive">
-                        {errors.feeStartDate}
+                        {errors.fee_start_date}
                       </p>
                     )}
                   </div>
@@ -654,15 +654,15 @@ export function AdminStudentsPage() {
           s.email.toLowerCase().includes(q) ||
           s.class_.toLowerCase().includes(q),
       );
-    if (filterStatus === "active") list = list.filter((s) => s.isActive);
-    if (filterStatus === "inactive") list = list.filter((s) => !s.isActive);
+    if (filterStatus === "active") list = list.filter((s) => s.is_active);
+    if (filterStatus === "inactive") list = list.filter((s) => !s.is_active);
     list.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "name") cmp = a.name.localeCompare(b.name);
-      if (sortKey === "monthlyFee") cmp = a.monthlyFee - b.monthlyFee;
-      if (sortKey === "joinedDate")
+      if (sortKey === "monthly_fee") cmp = a.monthly_fee - b.monthly_fee;
+      if (sortKey === "joined_date")
         cmp =
-          new Date(a.joinedDate).getTime() - new Date(b.joinedDate).getTime();
+          new Date(a.joined_date).getTime() - new Date(b.joined_date).getTime();
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
@@ -675,7 +675,7 @@ export function AdminStudentsPage() {
     try {
       await updateMutation.mutateAsync({
         id: student.id,
-        data: { isActive: activate },
+        data: { is_active: activate },
       });
       toast.success(
         activate
@@ -779,14 +779,14 @@ export function AdminStudentsPage() {
             </span>
             <SortHeader
               label="Fee"
-              sortKey="monthlyFee"
+              sortKey="monthly_fee"
               current={sortKey}
               dir={sortDir}
               onSort={handleSort}
             />
             <SortHeader
               label="Joined"
-              sortKey="joinedDate"
+              sortKey="joined_date"
               current={sortKey}
               dir={sortDir}
               onSort={handleSort}
@@ -859,7 +859,7 @@ export function AdminStudentsPage() {
                       </p>
                       <p className="text-xs text-muted-foreground md:hidden">
                         {student.class_} · {student.course} · ₹
-                        {student.monthlyFee.toLocaleString("en-IN")}/mo
+                        {student.monthly_fee.toLocaleString("en-IN")}/mo
                       </p>
                     </div>
                     <p className="hidden md:block text-sm text-muted-foreground truncate min-w-0">
@@ -874,10 +874,10 @@ export function AdminStudentsPage() {
                       </p>
                     </div>
                     <p className="hidden md:block text-sm font-medium text-foreground">
-                      ₹{student.monthlyFee.toLocaleString("en-IN")}
+                      ₹{student.monthly_fee.toLocaleString("en-IN")}
                     </p>
                     <p className="hidden md:block text-xs text-muted-foreground">
-                      {new Date(student.joinedDate).toLocaleDateString(
+                      {new Date(student.joined_date).toLocaleDateString(
                         "en-IN",
                         { day: "2-digit", month: "short", year: "numeric" },
                       )}
@@ -888,7 +888,7 @@ export function AdminStudentsPage() {
                       onKeyDown={(e) => e.stopPropagation()}
                     >
                       <Switch
-                        checked={student.isActive}
+                        checked={student.is_active}
                         onCheckedChange={(v) => {
                           if (!v) {
                             setToggleTarget(student);
@@ -899,10 +899,10 @@ export function AdminStudentsPage() {
                         data-ocid={`students.toggle.${idx + 1}`}
                       />
                       <Badge
-                        variant={student.isActive ? "default" : "secondary"}
-                        className={`text-xs shrink-0 ${student.isActive ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground"}`}
+                        variant={student.is_active ? "default" : "secondary"}
+                        className={`text-xs shrink-0 ${student.is_active ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground"}`}
                       >
-                        {student.isActive ? "Active" : "Inactive"}
+                        {student.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                     <div
@@ -954,7 +954,7 @@ export function AdminStudentsPage() {
                     >
                       <div className="flex items-center gap-2">
                         <Switch
-                          checked={student.isActive}
+                          checked={student.is_active}
                           onCheckedChange={(v) => {
                             if (!v) {
                               setToggleTarget(student);
@@ -964,10 +964,10 @@ export function AdminStudentsPage() {
                           aria-label={`Toggle ${student.name}`}
                         />
                         <Badge
-                          variant={student.isActive ? "default" : "secondary"}
-                          className={`text-xs ${student.isActive ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : ""}`}
+                          variant={student.is_active ? "default" : "secondary"}
+                          className={`text-xs ${student.is_active ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : ""}`}
                         >
-                          {student.isActive ? "Active" : "Inactive"}
+                          {student.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">

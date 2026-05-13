@@ -1,30 +1,20 @@
+import { logout as supabaseLogout } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
-import type { Role } from "@/types/auth";
 import { toast } from "sonner";
 
 export function useAuth() {
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-    login: storeLogin,
-    logout: storeLogout,
-  } = useAuthStore();
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const store = useAuthStore();
 
-  function login(email: string, password: string, role: Role) {
-    const result = storeLogin(email, password, role);
-    if (!result) {
-      toast.error("Invalid email or password. Please try again.");
-    } else {
-      toast.success(`Welcome back, ${result.name}!`);
+  async function logout() {
+    try {
+      await supabaseLogout();
+      store.logout();
+      toast.success("Logged out successfully.");
+    } catch {
+      toast.error("Logout failed.");
     }
-    return result;
   }
 
-  function logout() {
-    storeLogout();
-    toast.success("Logged out successfully.");
-  }
-
-  return { user, isAuthenticated, isLoading, login, logout };
+  return { user, isAuthenticated, isLoading, logout };
 }

@@ -1,14 +1,23 @@
-// Admin hook stubs for localStorage-based app
-// Admin is always the fixed demo admin
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/authStore";
+import type { AdminRecord } from "@/types/auth";
+import { useQuery } from "@tanstack/react-query";
+
 export function useMyAdmin() {
-  return {
-    data: {
-      id: "admin-001",
-      profile_id: "admin-001",
-      institute_name: "Akshay Classes",
-      institute_code: "AC001",
-      address: "Pune, Maharashtra",
+  const user = useAuthStore((s) => s.user);
+  const adminId = user?.admin_id;
+  return useQuery<AdminRecord | null>({
+    queryKey: ["admin", adminId],
+    queryFn: async () => {
+      if (!adminId) return null;
+      const { data, error } = await supabase
+        .from("admins")
+        .select("*")
+        .eq("id", adminId)
+        .single();
+      if (error) return null;
+      return data as AdminRecord;
     },
-    isLoading: false,
-  };
+    enabled: !!adminId,
+  });
 }

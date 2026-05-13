@@ -58,7 +58,7 @@ export function AdminLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { data: notifications = [] } = useNotifications();
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   function handleLogout() {
     logout();

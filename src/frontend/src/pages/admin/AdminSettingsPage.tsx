@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { STORAGE_KEYS } from "@/config/constants";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -49,7 +48,7 @@ function getStorageSize(key: string): string {
 }
 
 export function AdminSettingsPage() {
-  const { user, setUser } = useAuthStore();
+  const { user, login } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState(user?.name ?? "");
   const [saving, setSaving] = useState(false);
@@ -58,14 +57,14 @@ export function AdminSettingsPage() {
 
   const storageInfo = useMemo(
     () => [
-      { key: STORAGE_KEYS.AKSHAY_STUDENTS, label: "Students", icon: "👨‍🎓" },
-      { key: STORAGE_KEYS.AKSHAY_PAYMENTS, label: "Payments", icon: "💰" },
+      { key: "akshay_students", label: "Students", icon: "👨‍🎓" },
+      { key: "akshay_payments", label: "Payments", icon: "💰" },
       {
-        key: STORAGE_KEYS.AKSHAY_NOTIFICATIONS,
+        key: "akshay_notifications",
         label: "Notifications",
         icon: "🔔",
       },
-      { key: STORAGE_KEYS.AKSHAY_SETTINGS, label: "Settings", icon: "⚙️" },
+      { key: "akshay_settings", label: "Settings", icon: "⚙️" },
     ],
     [],
   );
@@ -80,7 +79,7 @@ export function AdminSettingsPage() {
     await new Promise((r) => setTimeout(r, 400));
     if (user) {
       const updatedUser = { ...user, name: name.trim() };
-      setUser(updatedUser);
+      login(updatedUser);
     }
     setSaving(false);
     toast.success("Profile saved!");
@@ -90,11 +89,11 @@ export function AdminSettingsPage() {
     setClearing(true);
     await new Promise((r) => setTimeout(r, 600));
     const keysToRemove = [
-      STORAGE_KEYS.AKSHAY_STUDENTS,
-      STORAGE_KEYS.AKSHAY_PAYMENTS,
-      STORAGE_KEYS.AKSHAY_NOTIFICATIONS,
-      STORAGE_KEYS.AKSHAY_SETTINGS,
-      STORAGE_KEYS.AKSHAY_SEEDED,
+      "akshay_students",
+      "akshay_payments",
+      "akshay_notifications",
+      "akshay_settings",
+      "akshay_seeded",
     ];
     for (const key of keysToRemove) localStorage.removeItem(key);
     setClearing(false);

@@ -2,6 +2,7 @@ import { PageTransition } from "@/components/shared/PageTransition";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { StudentLayout } from "@/layouts/StudentLayout";
+import { AuthCallbackPage } from "@/pages/AuthCallbackPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminFeesPage } from "@/pages/admin/AdminFeesPage";
@@ -43,6 +44,11 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: LoginPage,
+});
+const authCallbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/callback",
+  component: AuthCallbackPage,
 });
 
 // Admin
@@ -150,6 +156,7 @@ const studentProfileRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  authCallbackRoute,
   adminGuardRoute.addChildren([
     adminLayoutRoute.addChildren([
       adminRootRoute,

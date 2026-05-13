@@ -1,4 +1,5 @@
 import * as notifSvc from "@/services/notificationService";
+import { useAuthStore } from "@/store/authStore";
 import type {
   CreateNotificationForm,
   Notification,
@@ -6,9 +7,12 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useNotifications() {
+  const user = useAuthStore((s) => s.user);
+  const adminId = user?.admin_id;
   return useQuery<Notification[]>({
-    queryKey: ["notifications"],
-    queryFn: () => Promise.resolve(notifSvc.getNotifications()),
+    queryKey: ["notifications", adminId],
+    queryFn: () => notifSvc.getNotifications(adminId!),
+    enabled: !!adminId,
     staleTime: 0,
   });
 }
@@ -16,18 +20,30 @@ export function useNotifications() {
 export function useStudentNotifications(studentId: string) {
   return useQuery<Notification[]>({
     queryKey: ["notifications", "student", studentId],
-    queryFn: () =>
-      Promise.resolve(notifSvc.getNotificationsForStudent(studentId)),
+    queryFn: () => notifSvc.getNotificationsForStudent(studentId),
+    staleTime: 0,
+    enabled: !!studentId,
+  });
+}
+
+/** Student-scoped: reads student_id from auth store automatically. */
+export function useMyNotifications() {
+  const user = useAuthStore((s) => s.user);
+  const studentId = user?.student_id ?? "";
+  return useQuery<Notification[]>({
+    queryKey: ["notifications", "student", studentId],
+    queryFn: () => notifSvc.getNotificationsForStudent(studentId),
     staleTime: 0,
     enabled: !!studentId,
   });
 }
 
 export function useAddNotification() {
+  const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (form: CreateNotificationForm) =>
-      Promise.resolve(notifSvc.addNotification(form)),
+      notifSvc.addNotification(user?.admin_id!, form),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
@@ -35,15 +51,16 @@ export function useAddNotification() {
 export function useMarkAsRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => Promise.resolve(notifSvc.markAsRead(id)),
+    mutationFn: (id: string) => notifSvc.markAsRead(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
 
 export function useMarkAllAsRead() {
+  const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => Promise.resolve(notifSvc.markAllAsRead()),
+    mutationFn: () => notifSvc.markAllAsRead(user?.admin_id!),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
@@ -51,8 +68,7 @@ export function useMarkAllAsRead() {
 export function useDeleteNotification() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      Promise.resolve(notifSvc.deleteNotification(id)),
+    mutationFn: (id: string) => notifSvc.deleteNotification(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }

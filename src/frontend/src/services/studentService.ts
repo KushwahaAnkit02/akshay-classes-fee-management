@@ -1,62 +1,84 @@
-import { STORAGE_KEYS } from "@/config/constants";
+import { supabase } from "@/lib/supabase";
 import type {
   CreateStudentForm,
   Student,
   UpdateStudentForm,
 } from "@/types/student";
-import { generateId } from "@/utils/generateId";
-import { getData, setData } from "@/utils/storage";
 
-export function getStudents(): Student[] {
-  return getData<Student[]>(STORAGE_KEYS.AKSHAY_STUDENTS) ?? [];
+export async function getStudents(adminId: string): Promise<Student[]> {
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("admin_id", adminId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data as Student[];
 }
 
-export function getStudentById(id: string): Student | null {
-  return getStudents().find((s) => s.id === id) ?? null;
+export async function getStudentById(id: string): Promise<Student | null> {
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) return null;
+  return data as Student;
 }
 
-export function getStudentByEmail(email: string): Student | null {
-  return (
-    getStudents().find((s) => s.email.toLowerCase() === email.toLowerCase()) ??
-    null
-  );
+export async function getStudentByEmail(
+  email: string,
+): Promise<Student | null> {
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("email", email)
+    .single();
+  if (error) return null;
+  return data as Student;
 }
 
-export function addStudent(data: CreateStudentForm): Student {
-  const students = getStudents();
-  const now = new Date().toISOString();
-  const student: Student = {
-    id: generateId(),
-    name: data.name,
-    email: data.email,
-    class_: data.class_,
-    course: data.course,
-    monthlyFee: data.monthlyFee,
-    joinedDate: data.joinedDate,
-    feeStartDate: data.feeStartDate,
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-  };
-  setData(STORAGE_KEYS.AKSHAY_STUDENTS, [...students, student]);
-  return student;
+export async function addStudent(
+  adminId: string,
+  form: CreateStudentForm,
+): Promise<Student> {
+  const { data, error } = await supabase
+    .from("students")
+    .insert({
+      admin_id: adminId,
+      name: form.name,
+      email: form.email,
+      class_: form.class_,
+      course: form.course,
+      monthly_fee: form.monthly_fee,
+      joined_date: form.joined_date,
+      fee_start_date: form.fee_start_date,
+      is_active: true,
+      profile_id: null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Student;
 }
 
-export function updateStudent(id: string, data: UpdateStudentForm): Student {
-  const students = getStudents();
-  const idx = students.findIndex((s) => s.id === id);
-  if (idx === -1) throw new Error(`Student ${id} not found`);
-  const updated: Student = {
-    ...students[idx],
-    ...data,
-    updatedAt: new Date().toISOString(),
-  };
-  students[idx] = updated;
-  setData(STORAGE_KEYS.AKSHAY_STUDENTS, students);
-  return updated;
+export async function updateStudent(
+  id: string,
+  form: UpdateStudentForm,
+): Promise<Student> {
+  const { data, error } = await supabase
+    .from("students")
+    .update({
+      ...form,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Student;
 }
 
-export function deleteStudent(id: string): void {
-  const students = getStudents().filter((s) => s.id !== id);
-  setData(STORAGE_KEYS.AKSHAY_STUDENTS, students);
+export async function deleteStudent(id: string): Promise<void> {
+  const { error } = await supabase.from("students").delete().eq("id", id);
+  if (error) throw error;
 }

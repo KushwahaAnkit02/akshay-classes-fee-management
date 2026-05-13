@@ -41,7 +41,7 @@ const profileSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 
 export default function StudentProfilePage() {
-  const { user, setUser, logout } = useAuthStore();
+  const { user, login, logout } = useAuthStore();
   const { data: allStudents = [] } = useStudents();
   const { theme, setTheme } = useTheme();
   const updateStudent = useUpdateStudent();
@@ -66,7 +66,7 @@ export default function StudentProfilePage() {
     if (!user || !studentRecord) return;
     await new Promise((r) => setTimeout(r, 300));
     // Update auth store user name
-    setUser({ ...user, name: data.name });
+    login({ ...user, name: data.name });
     // Update student record name
     updateStudent.mutate({ id: studentRecord.id, data: { name: data.name } });
     reset({ name: data.name, phone: data.phone ?? "" });
@@ -140,13 +140,13 @@ export default function StudentProfilePage() {
                   {
                     icon: IndianRupee,
                     label: "Monthly Fee",
-                    value: `₹${studentRecord.monthlyFee.toLocaleString("en-IN")}`,
+                    value: `₹${studentRecord.monthly_fee.toLocaleString("en-IN")}`,
                   },
                   {
                     icon: CalendarDays,
                     label: "Joined Date",
                     value: new Date(
-                      studentRecord.joinedDate,
+                      studentRecord.joined_date,
                     ).toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
@@ -156,7 +156,7 @@ export default function StudentProfilePage() {
                   {
                     icon: GraduationCap,
                     label: "Status",
-                    value: studentRecord.isActive ? "Active" : "Inactive",
+                    value: studentRecord.is_active ? "Active" : "Inactive",
                   },
                 ].map((item) => (
                   <div

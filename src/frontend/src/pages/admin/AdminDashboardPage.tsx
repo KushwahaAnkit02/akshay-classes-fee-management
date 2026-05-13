@@ -218,7 +218,7 @@ function RecentPaymentsTable({
   const recent = [...payments]
     .sort(
       (a, b) =>
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+        new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime(),
     )
     .slice(0, 8);
 
@@ -264,7 +264,7 @@ function RecentPaymentsTable({
             </thead>
             <tbody>
               {recent.map((payment, idx) => {
-                const student = studentMap.get(payment.studentId);
+                const student = studentMap.get(payment.student_id);
                 return (
                   <motion.tr
                     key={payment.id}
@@ -280,22 +280,23 @@ function RecentPaymentsTable({
                           {student ? getInitials(student.name) : "?"}
                         </div>
                         <span className="font-medium text-foreground truncate max-w-[120px]">
-                          {student?.name ?? payment.studentName}
+                          {student?.name ??
+                            `Student ${payment.student_id.slice(0, 6)}`}
                         </span>
                       </div>
                     </td>
                     <td className="px-5 py-3 text-right font-display font-semibold text-foreground">
-                      ₹{payment.amountPaid.toLocaleString("en-IN")}
+                      ₹{payment.amount_paid.toLocaleString("en-IN")}
                     </td>
                     <td className="px-5 py-3 hidden sm:table-cell">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${PAYMENT_METHOD_COLORS[payment.paymentMethod]}`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${PAYMENT_METHOD_COLORS[payment.payment_method]}`}
                       >
-                        {payment.paymentMethod}
+                        {payment.payment_method}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-muted-foreground text-xs hidden md:table-cell">
-                      {new Date(payment.paymentDate).toLocaleDateString(
+                      {new Date(payment.payment_date).toLocaleDateString(
                         "en-IN",
                         { day: "2-digit", month: "short", year: "numeric" },
                       )}
@@ -319,7 +320,7 @@ function RecentStudentsList({
   const recent = [...students]
     .sort(
       (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     )
     .slice(0, 5);
 
@@ -372,12 +373,12 @@ function RecentStudentsList({
               </div>
               <div className="text-right shrink-0">
                 <p className="font-display text-sm font-semibold text-foreground">
-                  ₹{student.monthlyFee.toLocaleString("en-IN")}/mo
+                  ₹{student.monthly_fee.toLocaleString("en-IN")}/mo
                 </p>
                 <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${student.isActive ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"}`}
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${student.is_active ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"}`}
                 >
-                  {student.isActive ? "Active" : "Inactive"}
+                  {student.is_active ? "Active" : "Inactive"}
                 </span>
               </div>
             </motion.div>
@@ -403,7 +404,7 @@ export function AdminDashboardPage() {
     isLoading,
   } = useAdminDashboard();
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",

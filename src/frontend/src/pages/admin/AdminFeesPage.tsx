@@ -44,8 +44,8 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 type FeeStatus = "Paid" | "Pending" | "Overdue";
 
 function getFeeStatus(student: Student, paidThisMonth: number): FeeStatus {
-  if (paidThisMonth >= student.monthlyFee) return "Paid";
-  const startDate = new Date(student.feeStartDate);
+  if (paidThisMonth >= student.monthly_fee) return "Paid";
+  const startDate = new Date(student.fee_start_date);
   const now = new Date();
   if (now.getDate() > 10 && startDate < now) return "Overdue";
   return "Pending";
@@ -82,22 +82,22 @@ function RecordPaymentModal({
   const addPayment = useAddPayment();
   const [form, setForm] = useState({
     month: defaultMonth,
-    amountPaid: student.monthlyFee,
-    paymentMethod: "cash" as PaymentMethod,
+    amount_paid: student.monthly_fee,
+    payment_method: "cash" as PaymentMethod,
     notes: "",
-    paymentDate: new Date().toISOString().split("T")[0],
+    payment_date: new Date().toISOString().split("T")[0],
   });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.amountPaid || form.amountPaid <= 0) {
+    if (!form.amount_paid || form.amount_paid <= 0) {
       toast.error("Amount must be > 0");
       return;
     }
     try {
-      await addPayment.mutateAsync({ studentId: student.id, ...form });
+      await addPayment.mutateAsync({ student_id: student.id, ...form });
       toast.success(
-        `Payment of ₹${form.amountPaid.toLocaleString("en-IN")} recorded for ${student.name}!`,
+        `Payment of ₹${form.amount_paid.toLocaleString("en-IN")} recorded for ${student.name}!`,
       );
       onClose();
     } catch {
@@ -162,11 +162,11 @@ function RecordPaymentModal({
                     <Input
                       type="number"
                       min={1}
-                      value={form.amountPaid}
+                      value={form.amount_paid}
                       onChange={(e) =>
                         setForm((p) => ({
                           ...p,
-                          amountPaid: Number(e.target.value),
+                          amount_paid: Number(e.target.value),
                         }))
                       }
                       data-ocid="record_payment_modal.amount_input"
@@ -177,11 +177,11 @@ function RecordPaymentModal({
                   <div className="space-y-1.5">
                     <Label>Payment Method</Label>
                     <Select
-                      value={form.paymentMethod}
+                      value={form.payment_method}
                       onValueChange={(v) =>
                         setForm((p) => ({
                           ...p,
-                          paymentMethod: v as PaymentMethod,
+                          payment_method: v as PaymentMethod,
                         }))
                       }
                     >
@@ -201,9 +201,9 @@ function RecordPaymentModal({
                     <Label>Payment Date</Label>
                     <Input
                       type="date"
-                      value={form.paymentDate}
+                      value={form.payment_date}
                       onChange={(e) =>
-                        setForm((p) => ({ ...p, paymentDate: e.target.value }))
+                        setForm((p) => ({ ...p, payment_date: e.target.value }))
                       }
                       data-ocid="record_payment_modal.date_input"
                     />
@@ -261,13 +261,13 @@ export function AdminFeesPage() {
 
   const studentFeeData = useMemo(() => {
     return students
-      .filter((s) => s.isActive)
+      .filter((s) => s.is_active)
       .map((student) => {
         const studentPayments = payments.filter(
-          (p) => p.studentId === student.id && p.month === selectedMonth,
+          (p) => p.student_id === student.id && p.month === selectedMonth,
         );
         const paidThisMonth = studentPayments.reduce(
-          (sum, p) => sum + p.amountPaid,
+          (sum, p) => sum + p.amount_paid,
           0,
         );
         const status = getFeeStatus(student, paidThisMonth);
@@ -296,7 +296,7 @@ export function AdminFeesPage() {
     0,
   );
   const totalPotential = studentFeeData.reduce(
-    (sum, d) => sum + d.student.monthlyFee,
+    (sum, d) => sum + d.student.monthly_fee,
     0,
   );
   const collectionRate =
@@ -501,7 +501,7 @@ export function AdminFeesPage() {
                     <p className="text-xs text-muted-foreground">Paid / Due</p>
                     <p className="text-sm font-medium text-foreground">
                       ₹{paidThisMonth.toLocaleString("en-IN")} / ₹
-                      {student.monthlyFee.toLocaleString("en-IN")}
+                      {student.monthly_fee.toLocaleString("en-IN")}
                     </p>
                   </div>
                   <span

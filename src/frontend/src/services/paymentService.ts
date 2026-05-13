@@ -1,94 +1,97 @@
-import { STORAGE_KEYS } from "@/config/constants";
-import type {
-  Payment,
-  RecordPaymentForm,
-  UpdatePaymentForm,
-} from "@/types/payment";
-import type { Student } from "@/types/student";
-import { getCurrentMonthKey, getMonthKey } from "@/utils/formatters";
-import { generateId } from "@/utils/generateId";
-import { getData, setData } from "@/utils/storage";
+import { supabase } from "@/lib/supabase";
+import type { Payment, PaymentStats, RecordPaymentForm } from "@/types/payment";
+import { getStudents } from "./studentService";
 
-export function getPayments(): Payment[] {
-  return getData<Payment[]>(STORAGE_KEYS.AKSHAY_PAYMENTS) ?? [];
+export async function getPayments(adminId: string): Promise<Payment[]> {
+  const { data, error } = await supabase
+    .from("monthly_payments")
+    .select("*")
+    .eq("admin_id", adminId)
+    .order("payment_date", { ascending: false });
+  if (error) throw error;
+  return data as Payment[];
 }
 
-export function getPaymentsByStudent(studentId: string): Payment[] {
-  return getPayments().filter((p) => p.studentId === studentId);
+export async function getPaymentsByStudent(
+  studentId: string,
+): Promise<Payment[]> {
+  const { data, error } = await supabase
+    .from("monthly_payments")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("payment_date", { ascending: false });
+  if (error) throw error;
+  return data as Payment[];
 }
 
-export function addPayment(data: RecordPaymentForm): Payment {
-  const payments = getPayments();
-  const students = getData<Student[]>(STORAGE_KEYS.AKSHAY_STUDENTS) ?? [];
-  const student = students.find((s) => s.id === data.studentId);
-  const now = new Date().toISOString();
-  const payment: Payment = {
-    id: generateId(),
-    studentId: data.studentId,
-    studentName: student?.name ?? "Unknown",
-    adminId: "admin-001",
-    month: data.month,
-    amountPaid: data.amountPaid,
-    paymentMethod: data.paymentMethod,
-    notes: data.notes,
-    paymentDate: data.paymentDate,
-    createdAt: now,
-  };
-  setData(STORAGE_KEYS.AKSHAY_PAYMENTS, [...payments, payment]);
-  return payment;
+export async function addPayment(
+  adminId: string,
+  form: RecordPaymentForm,
+): Promise<Payment> {
+  const { data, error } = await supabase
+    .from("monthly_payments")
+    .insert({
+      admin_id: adminId,
+      student_id: form.student_id,
+      month: form.month,
+      amount_paid: form.amount_paid,
+      payment_method: form.payment_method,
+      notes: form.notes || null,
+      payment_date: form.payment_date,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Payment;
 }
 
-export function updatePayment(id: string, data: UpdatePaymentForm): Payment {
-  const payments = getPayments();
-  const idx = payments.findIndex((p) => p.id === id);
-  if (idx === -1) throw new Error(`Payment ${id} not found`);
-  const updated: Payment = { ...payments[idx], ...data };
-  payments[idx] = updated;
-  setData(STORAGE_KEYS.AKSHAY_PAYMENTS, payments);
-  return updated;
+export async function updatePayment(
+  id: string,
+  form: Partial<RecordPaymentForm>,
+): Promise<Payment> {
+  const { data, error } = await supabase
+    .from("monthly_payments")
+    .update(form)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Payment;
 }
 
-export function deletePayment(id: string): void {
-  setData(
-    STORAGE_KEYS.AKSHAY_PAYMENTS,
-    getPayments().filter((p) => p.id !== id),
-  );
+export async function deletePayment(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("monthly_payments")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
 }
 
-export interface PaymentStats {
-  totalPaid: number;
-  totalPending: number;
-  totalStudents: number;
-  paidThisMonth: number;
-  monthlyRevenue: Record<string, number>;
-}
+export async function getPaymentStats(adminId: string): Promise<PaymentStats> {
+  const students = await getStudents(adminId);
+  const payments = await getPayments(adminId);
 
-export function getPaymentStats(): PaymentStats {
-  const payments = getPayments();
-  const students = getData<Student[]>(STORAGE_KEYS.AKSHAY_STUDENTS) ?? [];
-  const currentMonth = getCurrentMonthKey();
+  const totalMonthlyFees = students.reduce((sum, s) => sum + s.monthly_fee, 0);
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount_paid, 0);
+  const totalPending = Math.max(0, totalMonthlyFees - totalPaid);
 
-  const activeStudents = students.filter((s) => s.isActive);
-  const totalPotential = activeStudents.reduce(
-    (sum, s) => sum + s.monthlyFee,
-    0,
-  );
-  const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
-  const paidThisMonth = payments
-    .filter((p) => getMonthKey(p.paymentDate) === currentMonth)
-    .reduce((sum, p) => sum + p.amountPaid, 0);
+  const now = new Date();
+  const revenueChartData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const revenue = payments
+      .filter((p) => p.month === monthKey)
+      .reduce((sum, p) => sum + p.amount_paid, 0);
+    return {
+      month: d.toLocaleString("en-IN", { month: "short" }),
+      revenue,
+    };
+  });
 
-  const monthlyRevenue: Record<string, number> = {};
-  for (const p of payments) {
-    const key = getMonthKey(p.paymentDate);
-    monthlyRevenue[key] = (monthlyRevenue[key] ?? 0) + p.amountPaid;
-  }
+  const paymentStatusData = [
+    { name: "Paid", value: totalPaid },
+    { name: "Pending", value: totalPending },
+  ];
 
-  return {
-    totalPaid,
-    totalPending: Math.max(0, totalPotential - paidThisMonth),
-    totalStudents: students.length,
-    paidThisMonth,
-    monthlyRevenue,
-  };
+  return { totalPaid, totalPending, revenueChartData, paymentStatusData };
 }
