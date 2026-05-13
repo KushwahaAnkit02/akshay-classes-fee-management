@@ -43755,14 +43755,28 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$K = [
+const __iconNode$L = [
   ["path", { d: "m3 16 4 4 4-4", key: "1co6wj" }],
   ["path", { d: "M7 20V4", key: "1yoxec" }],
   ["path", { d: "M11 4h10", key: "1w87gc" }],
   ["path", { d: "M11 8h7", key: "djye34" }],
   ["path", { d: "M11 12h4", key: "q8tih4" }]
 ];
-const ArrowDownWideNarrow = createLucideIcon("arrow-down-wide-narrow", __iconNode$K);
+const ArrowDownWideNarrow = createLucideIcon("arrow-down-wide-narrow", __iconNode$L);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$K = [
+  ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
+  ["path", { d: "M7 4v16", key: "1glfcx" }],
+  ["path", { d: "M11 12h4", key: "q8tih4" }],
+  ["path", { d: "M11 16h7", key: "uosisv" }],
+  ["path", { d: "M11 20h10", key: "jvxblo" }]
+];
+const ArrowUpNarrowWide = createLucideIcon("arrow-up-narrow-wide", __iconNode$K);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -43770,20 +43784,6 @@ const ArrowDownWideNarrow = createLucideIcon("arrow-down-wide-narrow", __iconNod
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$J = [
-  ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
-  ["path", { d: "M7 4v16", key: "1glfcx" }],
-  ["path", { d: "M11 12h4", key: "q8tih4" }],
-  ["path", { d: "M11 16h7", key: "uosisv" }],
-  ["path", { d: "M11 20h10", key: "jvxblo" }]
-];
-const ArrowUpNarrowWide = createLucideIcon("arrow-up-narrow-wide", __iconNode$J);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$I = [
   ["path", { d: "M10.268 21a2 2 0 0 0 3.464 0", key: "vwvbt9" }],
   [
     "path",
@@ -43795,14 +43795,14 @@ const __iconNode$I = [
   ["path", { d: "m2 2 20 20", key: "1ooewy" }],
   ["path", { d: "M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05", key: "1hqiys" }]
 ];
-const BellOff = createLucideIcon("bell-off", __iconNode$I);
+const BellOff = createLucideIcon("bell-off", __iconNode$J);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$H = [
+const __iconNode$I = [
   ["path", { d: "M10.268 21a2 2 0 0 0 3.464 0", key: "vwvbt9" }],
   [
     "path",
@@ -43812,14 +43812,14 @@ const __iconNode$H = [
     }
   ]
 ];
-const Bell = createLucideIcon("bell", __iconNode$H);
+const Bell = createLucideIcon("bell", __iconNode$I);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$G = [
+const __iconNode$H = [
   ["path", { d: "M12 7v14", key: "1akyts" }],
   [
     "path",
@@ -43829,14 +43829,14 @@ const __iconNode$G = [
     }
   ]
 ];
-const BookOpen = createLucideIcon("book-open", __iconNode$G);
+const BookOpen = createLucideIcon("book-open", __iconNode$H);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$F = [
+const __iconNode$G = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
@@ -43848,60 +43848,72 @@ const __iconNode$F = [
   ["path", { d: "M12 18h.01", key: "mhygvu" }],
   ["path", { d: "M16 18h.01", key: "kzsmim" }]
 ];
-const CalendarDays = createLucideIcon("calendar-days", __iconNode$F);
+const CalendarDays = createLucideIcon("calendar-days", __iconNode$G);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$E = [
+const __iconNode$F = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ];
-const Calendar = createLucideIcon("calendar", __iconNode$E);
+const Calendar = createLucideIcon("calendar", __iconNode$F);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$D = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$D);
+const __iconNode$E = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$E);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$C = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$C);
+const __iconNode$D = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$D);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$B = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
-const ChevronLeft = createLucideIcon("chevron-left", __iconNode$B);
+const __iconNode$C = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
+const ChevronLeft = createLucideIcon("chevron-left", __iconNode$C);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$A = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-const ChevronRight = createLucideIcon("chevron-right", __iconNode$A);
+const __iconNode$B = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$B);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$z = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$z);
+const __iconNode$A = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$A);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$z = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$z);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -43909,11 +43921,10 @@ const ChevronUp = createLucideIcon("chevron-up", __iconNode$z);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$y = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
 ];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$y);
+const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$y);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -43921,10 +43932,10 @@ const CircleAlert = createLucideIcon("circle-alert", __iconNode$y);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$x = [
-  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$x);
+const CircleCheck = createLucideIcon("circle-check", __iconNode$x);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -43933,9 +43944,10 @@ const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$x);
  */
 const __iconNode$w = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }],
+  ["path", { d: "M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662", key: "154egf" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$w);
+const CircleUser = createLucideIcon("circle-user", __iconNode$w);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -43944,10 +43956,9 @@ const CircleCheck = createLucideIcon("circle-check", __iconNode$w);
  */
 const __iconNode$v = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }],
-  ["path", { d: "M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662", key: "154egf" }]
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
 ];
-const CircleUser = createLucideIcon("circle-user", __iconNode$v);
+const Clock = createLucideIcon("clock", __iconNode$v);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -43955,10 +43966,10 @@ const CircleUser = createLucideIcon("circle-user", __iconNode$v);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$u = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$u);
+const Copy = createLucideIcon("copy", __iconNode$u);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -86337,6 +86348,193 @@ function StudentDashboardPage() {
     }
   ) });
 }
+const UPI_ID = "8756646873@axl";
+const PAYEE_NAME = "ANKIT";
+function UpiPayModal({
+  isOpen,
+  onClose,
+  monthKey,
+  monthLabel,
+  amountDue,
+  studentId,
+  adminId,
+  onSuccess
+}) {
+  const [loading, setLoading] = reactExports.useState(false);
+  const [copied, setCopied] = reactExports.useState(false);
+  const queryClient2 = useQueryClient();
+  async function handleConfirm() {
+    setLoading(true);
+    try {
+      await addPayment(adminId, {
+        student_id: studentId,
+        month: monthKey,
+        amount_paid: amountDue,
+        payment_method: "online",
+        notes: "UPI Payment",
+        payment_date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
+      });
+      await queryClient2.invalidateQueries({ queryKey: ["payments"] });
+      ue.success("Payment recorded successfully!");
+      onSuccess();
+      onClose();
+    } catch {
+      ue.error("Failed to record payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  function handleCopy() {
+    navigator.clipboard.writeText(UPI_ID).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2e3);
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: isOpen && /* @__PURE__ */ jsxRuntimeExports.jsx(
+    motion.div,
+    {
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      exit: { opacity: 0 },
+      transition: { duration: 0.2 },
+      className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm",
+      onClick: (e3) => e3.target === e3.currentTarget && onClose(),
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        motion.div,
+        {
+          initial: { opacity: 0, scale: 0.95, y: 8 },
+          animate: { opacity: 1, scale: 1, y: 0 },
+          exit: { opacity: 0, scale: 0.95, y: 8 },
+          transition: { duration: 0.22, ease: [0.4, 0, 0.2, 1] },
+          className: "relative w-full max-w-md rounded-2xl overflow-hidden shadow-elevated",
+          style: {
+            background: "oklch(var(--card) / 0.92)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid oklch(var(--border) / 0.3)"
+          },
+          "data-ocid": "upi-pay.dialog",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-1 w-full bg-gradient-to-r from-purple-600 to-purple-400" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: onClose,
+                className: "absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-fast",
+                "data-ocid": "upi-pay.close_button",
+                "aria-label": "Close",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "w-4 h-4" })
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-6 pt-5 pb-6 space-y-5", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Wallet, { className: "w-5 h-5 text-purple-500" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-foreground text-lg leading-tight", children: "Pay Fee" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground", children: [
+                    monthLabel,
+                    " —",
+                    " ",
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-semibold text-foreground", children: [
+                      "₹",
+                      amountDue.toLocaleString("en-IN")
+                    ] })
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-3 py-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-2 rounded-2xl ring-4 ring-purple-500/40 bg-white shadow-soft", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "img",
+                  {
+                    src: "/assets/qr-upi.png",
+                    alt: "PhonePe QR Code",
+                    width: 200,
+                    height: 200,
+                    className: "rounded-xl block"
+                  }
+                ) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground text-center", children: "Scan the QR code or enter the UPI ID in any payment app" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "div",
+                {
+                  className: "rounded-xl border p-4 space-y-1",
+                  style: { borderColor: "oklch(var(--border) / 0.4)" },
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] font-medium text-muted-foreground uppercase tracking-wide", children: "UPI ID" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "flex-1 font-mono text-base font-semibold text-foreground", children: UPI_ID }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: handleCopy,
+                          className: "w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-purple-500 hover:bg-purple-500/10 transition-fast shrink-0",
+                          "aria-label": "Copy UPI ID",
+                          "data-ocid": "upi-pay.copy_button",
+                          children: copied ? /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "w-4 h-4 text-green-500" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Copy, { className: "w-4 h-4" })
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[11px] text-muted-foreground", children: [
+                      "Pay to:",
+                      " ",
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-foreground", children: PAYEE_NAME })
+                    ] })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    className: "w-full bg-green-600 hover:bg-green-700 text-white gap-2 transition-fast",
+                    onClick: handleConfirm,
+                    disabled: loading,
+                    "data-ocid": "upi-pay.confirm_button",
+                    children: loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        motion.div,
+                        {
+                          animate: { rotate: 360 },
+                          transition: {
+                            duration: 0.8,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: "linear"
+                          },
+                          className: "w-4 h-4 rounded-full border-2 border-white/30 border-t-white"
+                        }
+                      ),
+                      "Recording..."
+                    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-4 h-4" }),
+                      "I have completed the payment"
+                    ] })
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    variant: "ghost",
+                    className: "w-full text-muted-foreground hover:text-foreground",
+                    onClick: onClose,
+                    disabled: loading,
+                    "data-ocid": "upi-pay.cancel_button",
+                    children: "Cancel"
+                  }
+                )
+              ] })
+            ] })
+          ]
+        },
+        "upi-modal-card"
+      )
+    },
+    "upi-modal-backdrop"
+  ) });
+}
 function buildMonthsSince(startDate, monthlyFee, payments) {
   const start = new Date(startDate);
   const now2 = /* @__PURE__ */ new Date();
@@ -86411,6 +86609,8 @@ function StudentFeesPage() {
     return Array.from(s2).sort().reverse();
   }, [allMonths]);
   const [selectedYear, setSelectedYear] = reactExports.useState("all");
+  const [payModal, setPayModal] = reactExports.useState(null);
+  const queryClient2 = useQueryClient();
   const filteredMonths = reactExports.useMemo(() => {
     if (selectedYear === "all") return allMonths;
     return allMonths.filter((m2) => m2.year === Number(selectedYear));
@@ -86445,179 +86645,216 @@ function StudentFeesPage() {
       bg: pendingThisMonth === 0 ? "bg-emerald-500/10" : "bg-amber-500/10"
     }
   ];
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(PageTransition, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "div",
-    {
-      className: "px-4 sm:px-6 py-6 space-y-6",
-      "data-ocid": "student-fees.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold text-foreground", children: "My Fees" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground mt-0.5", children: "Track your fee payment status month by month" })
-          ] }),
-          overdueCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            motion.div,
-            {
-              initial: { opacity: 0, scale: 0.9 },
-              animate: { opacity: 1, scale: 1 },
-              className: "glass-card rounded-xl px-4 py-3 border border-destructive/30 bg-destructive/5",
-              "data-ocid": "student-fees.overdue_alert",
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { className: "w-4 h-4 text-destructive shrink-0" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs font-semibold text-destructive", children: [
-                    overdueCount,
-                    " overdue month",
-                    overdueCount > 1 ? "s" : ""
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: "Please contact admin" })
-                ] })
-              ] })
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4", children: summaryCards.map((card, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          motion.div,
-          {
-            initial: { opacity: 0, y: 16 },
-            animate: { opacity: 1, y: 0 },
-            transition: { duration: 0.4, delay: idx * 0.08 },
-            whileHover: { y: -2, transition: { duration: 0.2 } },
-            className: "glass-card rounded-2xl p-5 shadow-soft cursor-default",
-            "data-ocid": `student-fees.summary_card.${idx + 1}`,
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between mb-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: card.title }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `p-2 rounded-xl ${card.bg} ${card.accent}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(card.icon, { className: "w-4 h-4" }) })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-2xl font-bold text-foreground tracking-tight", children: card.value }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-1", children: card.sub })
-            ]
-          },
-          card.title
-        )) }),
-        studentRecord && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          motion.div,
-          {
-            initial: { opacity: 0, y: 12 },
-            animate: { opacity: 1, y: 0 },
-            transition: { duration: 0.4, delay: 0.2 },
-            className: "glass-card rounded-2xl p-5 shadow-soft",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-4", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(CalendarDays, { className: "w-4 h-4 text-primary" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-semibold text-foreground", children: "Enrollment Details" })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm", children: [
-                { label: "Class", value: studentRecord.class_ },
-                { label: "Course", value: studentRecord.course },
-                {
-                  label: "Joined",
-                  value: new Date(studentRecord.joined_date).toLocaleDateString(
-                    "en-IN",
-                    {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric"
-                    }
-                  )
-                },
-                {
-                  label: "Status",
-                  value: studentRecord.is_active ? "Active" : "Inactive",
-                  isStatus: true
-                }
-              ].map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mb-1", children: item.label }),
-                item.isStatus ? /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-xs", children: item.value }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-medium text-foreground", children: item.value })
-              ] }, item.label)) })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          motion.div,
-          {
-            initial: { opacity: 0, y: 16 },
-            animate: { opacity: 1, y: 0 },
-            transition: { duration: 0.4, delay: 0.25 },
-            className: "glass-card rounded-2xl shadow-soft overflow-hidden",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-5 py-4 border-b border-border/30 flex flex-col sm:flex-row sm:items-center gap-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-semibold text-foreground flex-1", children: "Monthly Fee Status" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: selectedYear, onValueChange: setSelectedYear, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    SelectTrigger,
-                    {
-                      className: "w-full sm:w-36 bg-card/60",
-                      "data-ocid": "student-fees.year_filter",
-                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "All years" })
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "all", children: "All Years" }),
-                    years.map((y2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(y2), children: y2 }, y2))
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(PageTransition, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "px-4 sm:px-6 py-6 space-y-6",
+        "data-ocid": "student-fees.page",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "font-display text-2xl font-bold text-foreground", children: "My Fees" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground mt-0.5", children: "Track your fee payment status month by month" })
+            ] }),
+            overdueCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              motion.div,
+              {
+                initial: { opacity: 0, scale: 0.9 },
+                animate: { opacity: 1, scale: 1 },
+                className: "glass-card rounded-xl px-4 py-3 border border-destructive/30 bg-destructive/5",
+                "data-ocid": "student-fees.overdue_alert",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { className: "w-4 h-4 text-destructive shrink-0" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs font-semibold text-destructive", children: [
+                      overdueCount,
+                      " overdue month",
+                      overdueCount > 1 ? "s" : ""
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground", children: "Please contact admin" })
                   ] })
                 ] })
-              ] }),
-              isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSkeleton, { variant: "list", rows: 6 }) }) : filteredMonths.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                EmptyState,
-                {
-                  icon: BookOpen,
-                  title: "No fee records",
-                  description: "Fee records will appear here after your fee start date.",
-                  dataOcid: "student-fees.empty_state"
-                }
-              ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 space-y-2.5", children: filteredMonths.map(({ key, paid, status }) => {
-                const cfg = STATUS_CONFIG[status];
-                return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  motion.div,
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4", children: summaryCards.map((card, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            motion.div,
+            {
+              initial: { opacity: 0, y: 16 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.4, delay: idx * 0.08 },
+              whileHover: { y: -2, transition: { duration: 0.2 } },
+              className: "glass-card rounded-2xl p-5 shadow-soft cursor-default",
+              "data-ocid": `student-fees.summary_card.${idx + 1}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between mb-3", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: card.title }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `p-2 rounded-xl ${card.bg} ${card.accent}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx(card.icon, { className: "w-4 h-4" }) })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-2xl font-bold text-foreground tracking-tight", children: card.value }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-1", children: card.sub })
+              ]
+            },
+            card.title
+          )) }),
+          studentRecord && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            motion.div,
+            {
+              initial: { opacity: 0, y: 12 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.4, delay: 0.2 },
+              className: "glass-card rounded-2xl p-5 shadow-soft",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-4", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(CalendarDays, { className: "w-4 h-4 text-primary" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-semibold text-foreground", children: "Enrollment Details" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm", children: [
+                  { label: "Class", value: studentRecord.class_ },
+                  { label: "Course", value: studentRecord.course },
                   {
-                    initial: { opacity: 0, x: -8 },
-                    animate: { opacity: 1, x: 0 },
-                    className: "flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-fast",
-                    "data-ocid": `student-fees.month_row.${key}`,
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "div",
-                        {
-                          className: `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`,
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(cfg.icon, { className: `w-4 h-4 ${cfg.iconColor}` })
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm font-medium text-foreground", children: [
-                          formatMonth(key),
-                          key === currentMonth && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ml-2 text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full font-medium", children: "Current" })
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground mt-0.5", children: [
-                          paid > 0 ? `₹${paid.toLocaleString("en-IN")} paid` : "No payment recorded",
-                          monthlyFee > 0 && paid > 0 && paid < monthlyFee && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1 text-amber-500", children: [
-                            "· ₹",
-                            (monthlyFee - paid).toLocaleString("en-IN"),
-                            " ",
-                            "remaining"
-                          ] })
-                        ] })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right shrink-0", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "font-display font-semibold text-foreground text-sm", children: [
-                          "₹",
-                          monthlyFee.toLocaleString("en-IN")
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: `text-[10px] mt-1 ${cfg.badge}`, children: cfg.label })
-                      ] })
-                    ]
+                    label: "Joined",
+                    value: new Date(studentRecord.joined_date).toLocaleDateString(
+                      "en-IN",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                      }
+                    )
                   },
-                  key
-                );
-              }) })
-            ]
-          }
-        )
-      ]
-    }
-  ) });
+                  {
+                    label: "Status",
+                    value: studentRecord.is_active ? "Active" : "Inactive",
+                    isStatus: true
+                  }
+                ].map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mb-1", children: item.label }),
+                  item.isStatus ? /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-xs", children: item.value }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-medium text-foreground", children: item.value })
+                ] }, item.label)) })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            motion.div,
+            {
+              initial: { opacity: 0, y: 16 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.4, delay: 0.25 },
+              className: "glass-card rounded-2xl shadow-soft overflow-hidden",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-5 py-4 border-b border-border/30 flex flex-col sm:flex-row sm:items-center gap-3", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-semibold text-foreground flex-1", children: "Monthly Fee Status" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: selectedYear, onValueChange: setSelectedYear, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      SelectTrigger,
+                      {
+                        className: "w-full sm:w-36 bg-card/60",
+                        "data-ocid": "student-fees.year_filter",
+                        children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, { placeholder: "All years" })
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectContent, { children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: "all", children: "All Years" }),
+                      years.map((y2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(y2), children: y2 }, y2))
+                    ] })
+                  ] })
+                ] }),
+                isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingSkeleton, { variant: "list", rows: 6 }) }) : filteredMonths.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  EmptyState,
+                  {
+                    icon: BookOpen,
+                    title: "No fee records",
+                    description: "Fee records will appear here after your fee start date.",
+                    dataOcid: "student-fees.empty_state"
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 space-y-2.5", children: filteredMonths.map(({ key, paid, status }) => {
+                  const cfg = STATUS_CONFIG[status];
+                  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    motion.div,
+                    {
+                      initial: { opacity: 0, x: -8 },
+                      animate: { opacity: 1, x: 0 },
+                      className: "flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-fast",
+                      "data-ocid": `student-fees.month_row.${key}`,
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "div",
+                          {
+                            className: `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`,
+                            children: /* @__PURE__ */ jsxRuntimeExports.jsx(cfg.icon, { className: `w-4 h-4 ${cfg.iconColor}` })
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm font-medium text-foreground", children: [
+                            formatMonth(key),
+                            key === currentMonth && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ml-2 text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full font-medium", children: "Current" })
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground mt-0.5", children: [
+                            paid > 0 ? `₹${paid.toLocaleString("en-IN")} paid` : "No payment recorded",
+                            monthlyFee > 0 && paid > 0 && paid < monthlyFee && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1 text-amber-500", children: [
+                              "· ₹",
+                              (monthlyFee - paid).toLocaleString("en-IN"),
+                              " ",
+                              "remaining"
+                            ] })
+                          ] })
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "font-display font-semibold text-foreground text-sm", children: [
+                              "₹",
+                              monthlyFee.toLocaleString("en-IN")
+                            ] }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: `text-[10px] mt-1 ${cfg.badge}`, children: cfg.label })
+                          ] }),
+                          status !== "Paid" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            Button,
+                            {
+                              size: "sm",
+                              className: "bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto",
+                              onClick: () => setPayModal({
+                                monthKey: key,
+                                monthLabel: formatMonth(key),
+                                amountDue: monthlyFee - paid
+                              }),
+                              "data-ocid": `student-fees.pay_button.${key}`,
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(CreditCard, { className: "w-3 h-3 mr-1" }),
+                                "Pay Now"
+                              ]
+                            }
+                          )
+                        ] })
+                      ]
+                    },
+                    key
+                  );
+                }) })
+              ]
+            }
+          )
+        ]
+      }
+    ),
+    payModal && user && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      UpiPayModal,
+      {
+        isOpen: !!payModal,
+        onClose: () => setPayModal(null),
+        monthKey: payModal.monthKey,
+        monthLabel: payModal.monthLabel,
+        amountDue: payModal.amountDue,
+        studentId: user.student_id,
+        adminId: user.linked_admin_id,
+        onSuccess: () => {
+          queryClient2.invalidateQueries({ queryKey: ["payments"] });
+          setPayModal(null);
+        }
+      }
+    )
+  ] });
 }
 const METHOD_BADGE = {
   cash: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",

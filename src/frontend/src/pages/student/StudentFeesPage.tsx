@@ -1,7 +1,9 @@
+import { UpiPayModal } from "@/components/modals/UpiPayModal";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -17,12 +19,14 @@ import {
   getCurrentMonthKey,
   getMonthKey,
 } from "@/utils/formatters";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   BookOpen,
   CalendarDays,
   CheckCircle2,
   Clock,
+  CreditCard,
   IndianRupee,
   TrendingUp,
 } from "lucide-react";
@@ -123,6 +127,12 @@ export default function StudentFeesPage() {
   }, [allMonths]);
 
   const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [payModal, setPayModal] = useState<{
+    monthKey: string;
+    monthLabel: string;
+    amountDue: number;
+  } | null>(null);
+  const queryClient = useQueryClient();
 
   const filteredMonths = useMemo(() => {
     if (selectedYear === "all") return allMonths;
@@ -354,13 +364,32 @@ export default function StudentFeesPage() {
                         )}
                       </p>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-display font-semibold text-foreground text-sm">
-                        ₹{monthlyFee.toLocaleString("en-IN")}
-                      </p>
-                      <Badge className={`text-[10px] mt-1 ${cfg.badge}`}>
-                        {cfg.label}
-                      </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <p className="font-display font-semibold text-foreground text-sm">
+                          ₹{monthlyFee.toLocaleString("en-IN")}
+                        </p>
+                        <Badge className={`text-[10px] mt-1 ${cfg.badge}`}>
+                          {cfg.label}
+                        </Badge>
+                      </div>
+                      {status !== "Paid" && (
+                        <Button
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto"
+                          onClick={() =>
+                            setPayModal({
+                              monthKey: key,
+                              monthLabel: formatMonth(key),
+                              amountDue: monthlyFee - paid,
+                            })
+                          }
+                          data-ocid={`student-fees.pay_button.${key}`}
+                        >
+                          <CreditCard className="w-3 h-3 mr-1" />
+                          Pay Now
+                        </Button>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -369,6 +398,21 @@ export default function StudentFeesPage() {
           )}
         </motion.div>
       </div>
+      {payModal && user && (
+        <UpiPayModal
+          isOpen={!!payModal}
+          onClose={() => setPayModal(null)}
+          monthKey={payModal.monthKey}
+          monthLabel={payModal.monthLabel}
+          amountDue={payModal.amountDue}
+          studentId={user.student_id!}
+          adminId={user.linked_admin_id!}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            setPayModal(null);
+          }}
+        />
+      )}
     </PageTransition>
   );
 }
